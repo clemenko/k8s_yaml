@@ -2367,11 +2367,11 @@ data:
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
           - role: node
-        relabel_configs:
-          - source_labels: [__address__]
-            regex: '(.*):10250'
-            replacement: '${1}:10255'
-            target_label: __address__
+        #relabel_configs:
+        #  - source_labels: [__address__]
+        #    regex: '(.*):10250'
+        #    replacement: '${1}:10255'
+        #    target_label: __address__
 
       # https://github.com/prometheus/prometheus/blob/master/documentation/examples/prometheus-kubernetes.yml#L79
       - job_name: 'kubernetes-endpoints'
