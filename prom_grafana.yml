@@ -1,4 +1,5 @@
 # Derived from ./manifests
+# https://github.com/giantswarm/kubernetes-prometheus
 ---
 apiVersion: v1
 kind: Namespace
