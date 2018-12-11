@@ -96,13 +96,15 @@ kind: Ingress
 metadata:
   name: flask
   namespace: flask
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /  
 spec:
   rules:
-  - host: ucp.dockr.life
+  - host: app.dockr.life
     http:
       paths:
-      - path: /flask/
+      - path: /flask
         backend:
           serviceName: flask
-          servicePort: 80
+          servicePort: 5000
 ---

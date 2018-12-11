@@ -1,6 +1,8 @@
 # clemenko
 # prometheus https://kubernetes.github.io/ingress-nginx/user-guide/monitoring/
 # traefik : https://success.docker.com/article/how-to-configure-traefik-as-a-layer-7-ingress-controller-for-kubernetes
+
+# MUST RUN : `kubectl label nodes ddc-b105 role=ingress` to pin to the ingress
 ---
 apiVersion: v1
 kind: Namespace
@@ -8,21 +10,60 @@ metadata:
   name: ingress-nginx
 
 ---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: ingress-nginx
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
 
+--- 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
     subjectName: ingress-nginx-default
-  name: ingress-nginx-default:ucp.restricted-control
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
+#  name: ingress-nginx-default:ucp.restricted-control
+  name: ingress-nginx:ingress-nginx
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: ucp.restricted-control
+#  name: ucp.restricted-control
+  name: ingress-nginx
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: ingress-nginx
   namespace: ingress-nginx
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
 
 ---
 
@@ -68,6 +109,8 @@ spec:
           requests:
             cpu: 10m
             memory: 20Mi
+      nodeSelector: 
+        role: ingress
 ---
 apiVersion: v1
 kind: Service
@@ -89,39 +132,49 @@ metadata:
   name: nginx-configuration
   namespace: ingress-nginx
   labels:
-    app: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: tcp-services
   namespace: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: udp-services
   namespace: ingress-nginx
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/part-of: ingress-nginx
 ---
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: nginx-ingress-controller
+  name: ingress-nginx
   namespace: ingress-nginx
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ingress-nginx
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/part-of: ingress-nginx
   template:
     metadata:
       labels:
-        app: ingress-nginx
+        app.kubernetes.io/name: ingress-nginx
+        app.kubernetes.io/part-of: ingress-nginx
       annotations:
         prometheus.io/port: '10254'
         prometheus.io/scrape: 'true'
         seccomp.security.alpha.kubernetes.io/pod: docker/default
     spec:
+      serviceAccountName: ingress-nginx
       initContainers:
       - command:
         - sh
@@ -142,13 +195,9 @@ spec:
             - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
             - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
             - --annotations-prefix=nginx.ingress.kubernetes.io
+            - --publish-service=$(POD_NAMESPACE)/ingress-nginx
+            - --sort-backends=true 
             - --enable-ssl-passthrough
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - NET_BIND_SERVICE
           env:
             - name: POD_NAME
               valueFrom:
@@ -182,6 +231,8 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
+      nodeSelector:
+        role: ingress
 ---
 apiVersion: v1
 kind: Service
@@ -192,16 +243,18 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx
 spec:
+  externalTrafficPolicy: Cluster
   type: NodePort
-  ports:
-  - name: http
-    port: 80
-    targetPort: 80
-    protocol: TCP
-  - name: https
-    port: 443
-    targetPort: 443
-    protocol: TCP
   selector:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: https
+    protocol: TCP
+
