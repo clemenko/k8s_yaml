@@ -13,6 +13,11 @@ metadata:
     app: flask
 spec:
   replicas: 4
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
   selector:
     matchLabels:
       app: flask
