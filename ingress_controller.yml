@@ -2,6 +2,8 @@
 # prometheus https://kubernetes.github.io/ingress-nginx/user-guide/monitoring/
 # traefik : https://success.docker.com/article/how-to-configure-traefik-as-a-layer-7-ingress-controller-for-kubernetes
 
+# ingress annotations : https://github.com/kubernetes/ingress-nginx/blob/master/docs/user-guide/nginx-configuration/annotations.md
+
 # MUST RUN : `kubectl label nodes ddc-b105 role=ingress` to pin to the ingress
 ---
 apiVersion: v1
