@@ -23,6 +23,7 @@ rules:
       - services
       - endpoints
       - secrets
+      - configmaps
     verbs:
       - get
       - list
@@ -196,7 +197,6 @@ spec:
             - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
             - --annotations-prefix=nginx.ingress.kubernetes.io
             - --publish-service=$(POD_NAMESPACE)/ingress-nginx
-            - --sort-backends=true 
             - --enable-ssl-passthrough
           env:
             - name: POD_NAME
