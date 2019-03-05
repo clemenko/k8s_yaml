@@ -23,7 +23,6 @@ rules:
       - services
       - endpoints
       - secrets
-      - configmaps
       - pods
     verbs:
       - get
@@ -37,7 +36,16 @@ rules:
       - get
       - list
       - watch
-
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
 --- 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
