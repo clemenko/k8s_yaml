@@ -1,6 +1,3 @@
-# from https://docs.docker.com/ee/ucp/kubernetes/kubernetes-network-encryption/#configuring-mtus
-
-
 ######################
 # Cluster role for key management jobs
 ######################

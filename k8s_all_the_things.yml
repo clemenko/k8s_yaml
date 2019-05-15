@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
       - name: flask
-        image: clemenko/dc18:0.2
+        image: clemenko/flask_demo
         ports:
         - containerPort: 5000
 ---
@@ -102,13 +102,13 @@ metadata:
   name: flask
   namespace: flask
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /  
+#    nginx.ingress.kubernetes.io/rewrite-target: /  
 spec:
   rules:
   - host: app.dockr.life
     http:
       paths:
-      - path: /flask
+      - path: /
         backend:
           serviceName: flask
           servicePort: 5000
