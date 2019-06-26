@@ -15,6 +15,21 @@ kind: Namespace
 metadata:
   name: ingress-traefik
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    subjectName: ingress-traefik-default
+  name: ingress-traefik-default:ucp.restricted-control
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ucp.restricted-control
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: ingress-traefik
+---
 kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
