@@ -207,6 +207,7 @@ spec:
             - --annotations-prefix=nginx.ingress.kubernetes.io
             - --publish-service=$(POD_NAMESPACE)/ingress-nginx
             - --enable-ssl-passthrough
+ #           - --default-ssl-certificate=$(POD_NAMESPACE)/default-ssl-certificate
           env:
             - name: POD_NAME
               valueFrom:
@@ -269,3 +270,14 @@ spec:
     nodePort: 34443
     protocol: TCP
 
+---
+# if using default ssl
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  name: default-ssl-certificate
+#  namespace: ingress-nginx
+#type: Opaque
+#data:
+#  tls.crt: base64 encoded cert
+#  tls.key: base64 encoded key
