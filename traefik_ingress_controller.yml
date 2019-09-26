@@ -1,14 +1,5 @@
 # https://success.docker.com/article/how-to-configure-traefik-as-a-layer-7-ingress-controller-for-kubernetes
 
-# add ClusterRoleBinding
-
-#Create a grant for the default service account within the ingress-traefik namespace:
-#   Navigate to the Grants page, under the User Managerment section of the UCP UI, and click Create Grant.
-#    Within the Subject pane, select Service Account. For the Namespace select ingress-traefik, and select default for the Service Account, and click Next.
-#    Within the Role pane, select Restricted Control, and click Next.
-#    Within the Resource Set pane, select the Type Namespace, and select the Apply grant to all existing and new namespaces toggle.
-#    Click Create.
-    
 ---
 apiVersion: v1
 kind: Namespace
@@ -147,6 +138,7 @@ spec:
   selector:
     k8s-app: traefik-ingress-lb
   type: NodePort
+#  type: LoadBalancer
   ports:
     - protocol: TCP
       port: 80
@@ -154,4 +146,5 @@ spec:
     - protocol: TCP
       port: 8080
       name: admin
+
   
