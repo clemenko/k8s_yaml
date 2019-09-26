@@ -15,19 +15,86 @@ kind: Namespace
 metadata:
   name: ingress-traefik
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ingress-traefik
+  namespace: ingress-traefik
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: ingress-traefik
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - middlewares
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - ingressroutes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - ingressroutetcps
+    verbs:
+      - get
+      - list
+      - watch
+### Fixes the TlsOptions bug
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - tlsoptions
+    verbs:
+      - get
+      - list
+      - watch
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  labels:
-    subjectName: ingress-traefik-default
-  name: ingress-traefik-default:ucp.restricted-control
+  name: ingress-traefik
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: ucp.restricted-control
+  name: ingress-traefik
 subjects:
 - kind: ServiceAccount
-  name: default
+  name: ingress-traefik
   namespace: ingress-traefik
 ---
 kind: Deployment
@@ -48,7 +115,7 @@ spec:
         k8s-app: traefik-ingress-lb
         name: traefik-ingress-lb
     spec:
-      serviceAccountName: default
+      serviceAccountName: ingress-traefik
       terminationGracePeriodSeconds: 60
       containers:
       - image: traefik
@@ -59,24 +126,32 @@ spec:
         - name: admin
           containerPort: 8080
         args:
-        - --api
-        - --kubernetes
-        - --logLevel=INFO
+        - "--api=true"
+        - "--api.dashboard=true"
+        - "--providers.kubernetesingress"
+        - "--entrypoints.web.address=:80"
+        - "--api.insecure=true"
+        - "--metrics.prometheus=true"
+        - "--accesslog=true"
+        - "--global.sendAnonymousUsage=false"
 ---
 kind: Service
 apiVersion: v1
 metadata:
   name: traefik-ingress-service
   namespace: ingress-traefik
+  annotations:
+    prometheus.io.scrape: 'true'
+    prometheus.io/port: '8080'
 spec:
   selector:
     k8s-app: traefik-ingress-lb
+  type: NodePort
   ports:
     - protocol: TCP
-      nodePort: 35080
       port: 80
       name: web
     - protocol: TCP
       port: 8080
       name: admin
-  type: NodePort
+  
