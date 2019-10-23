@@ -92,7 +92,7 @@ spec:
     app: flask
   type: NodePort
   ports:
-  - name: redflaskis
+  - name: flask
     protocol: TCP
     port: 5000
     targetPort: 5000
