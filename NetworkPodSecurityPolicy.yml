@@ -37,3 +37,31 @@ spec:
         matchLabels:
           name: ingress-nginx
 ---
+
+apiVersion: networking.k8s.io/v1 kind: NetworkPolicy
+metadata:
+name: internet-access
+spec:
+   podSelector:
+     matchlabels:
+networking/allow-internet-access: “true” policyTypes:
+- Ingress ingress: - {}
+
+---
+
+apiVersion: extensions/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: restrict-root
+spec:
+  privileged: false
+  runAsUser:
+    rule: MustRunAsNonRoot
+  seLinux:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - '*'
