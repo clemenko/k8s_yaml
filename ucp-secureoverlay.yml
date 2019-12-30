@@ -2,7 +2,7 @@
 # Cluster role for key management jobs
 ######################
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: ucp-secureoverlay-mgr
 rules:
@@ -16,7 +16,7 @@ rules:
 ######################
 # Cluster role binding for key management jobs
 ######################
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: ucp-secureoverlay-mgr
@@ -42,7 +42,7 @@ metadata:
 # Cluster role for secure overlay per-node agent
 ######################
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: ucp-secureoverlay-agent
 rules:
@@ -57,7 +57,7 @@ rules:
 ######################
 # Cluster role binding for secure overlay per-node agent
 ######################
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: ucp-secureoverlay-agent

@@ -20,7 +20,7 @@ spec:
     run: apache-php
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: apache-php
@@ -51,7 +51,7 @@ spec:
             cpu: 50m
 ---
 kind: Ingress
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   namespace: apache-php
   name: apache-php-ing
@@ -68,14 +68,14 @@ spec:
           serviceName: apache-php-svc
           servicePort: 80
 ---
-apiVersion: autoscaling/v2beta1
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: apache-php-hpa
   namespace: apache-php
 spec:
   scaleTargetRef:
-    apiVersion: apps/v1beta1
+    apiVersion: apps/v1
     kind: Deployment
     name: apache-php-dep
   minReplicas: 1

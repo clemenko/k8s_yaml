@@ -13,7 +13,7 @@ metadata:
   namespace: ingress-traefik
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: ingress-traefik
 rules:
@@ -89,7 +89,7 @@ subjects:
   namespace: ingress-traefik
 ---
 kind: Deployment
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   name: traefik-ingress-controller
   namespace: ingress-traefik
@@ -148,7 +148,7 @@ spec:
       port: 8080
       name: admin
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Ingress
 metadata:
   name: traefik-ingress

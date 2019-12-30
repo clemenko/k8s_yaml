@@ -49,7 +49,7 @@ networking/allow-internet-access: “true” policyTypes:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: PodSecurityPolicy
 metadata:
   name: restrict-root

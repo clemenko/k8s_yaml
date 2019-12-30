@@ -4,7 +4,7 @@ kind: Namespace
 metadata:
   name: grafana-traefik
 ---  
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: grafana-traefik
@@ -42,7 +42,7 @@ spec:
     port: 80
     targetPort: 3000
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Ingress
 metadata:
   name: ingress
