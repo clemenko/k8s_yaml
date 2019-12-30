@@ -117,12 +117,13 @@ spec:
         - name: admin
           containerPort: 8080
         args:
-        - "--api=true"
-        - "--api.dashboard=true"
+#        - "--api=true"
+        - "--api.insecure=true"
         - "--providers.kubernetesingress"
         - "--entrypoints.web.address=:80"
-        - "--api.insecure=true"
         - "--metrics.prometheus=true"
+        - "--metrics.prometheus.addEntryPointsLabels=true"
+        - "--metrics.prometheus.addServicesLabels=true"
         - "--accesslog=true"
         - "--global.sendAnonymousUsage=false"
 ---
@@ -146,5 +147,22 @@ spec:
     - protocol: TCP
       port: 8080
       name: admin
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: traefik-ingress
+  namespace: ingress-traefik
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/rule-type: PathPrefix
+spec:
+  rules:
+    - host: traefik.dockr.life
+      http:
+        paths:
+        - path: /api || /dashboard
+          backend:
+            serviceName: traefik-ingress-service
+            servicePort: 8080
 
-  
