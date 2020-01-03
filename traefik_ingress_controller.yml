@@ -148,7 +148,7 @@ spec:
       port: 8080
       name: admin
 ---
-apiVersion: apps/v1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: traefik-ingress
