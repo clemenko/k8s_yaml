@@ -42,7 +42,7 @@ spec:
     port: 80
     targetPort: 3000
 ---
-apiVersion: apps/v1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: ingress
