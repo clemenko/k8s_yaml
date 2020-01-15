@@ -32,6 +32,7 @@ spec:
         image: clemenko/simple
         ports:
         - containerPort: 5000
+        imagePullPolicy: Always
 ---
 apiVersion: apps/v1
 kind: Deployment
