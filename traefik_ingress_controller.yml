@@ -87,15 +87,15 @@ subjects:
   namespace: ingress-traefik
 ---
 apiVersion: apps/v1
-kind: DaemonSet
-#kind: Deployment
+#kind: DaemonSet
+kind: Deployment
 metadata:
   name: traefik-ingress-controller
   namespace: ingress-traefik
   labels:
     k8s-app: traefik-ingress-lb
 spec:
-#  replicas: 3
+  replicas: 3
   selector:
     matchLabels:
       k8s-app: traefik-ingress-lb
@@ -107,8 +107,8 @@ spec:
     spec:
       serviceAccountName: ingress-traefik
       terminationGracePeriodSeconds: 60
-      nodeSelector:
-        traefik: ingress
+#      nodeSelector:
+#        traefik: ingress
       containers:
       - image: traefik
         name: traefik-ingress-lb

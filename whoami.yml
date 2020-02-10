@@ -1,0 +1,63 @@
+# clemenko
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: whoami
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  namespace: whoami
+  labels:
+    app: whoami
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+      - name: whoami
+        image: containous/whoami
+        ports:
+        - containerPort: 80
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: whoami
+  name: whoami
+  namespace: whoami
+spec:
+  selector:
+    app: whoami
+  type: NodePort
+  ports:
+  - name: whoami
+    protocol: TCP
+    port: 8000
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: whoami
+  namespace: whoami
+spec:
+  rules:
+  - host: whoami.dockr.life
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: whoami
+          servicePort: 8000
+---
