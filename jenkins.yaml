@@ -103,7 +103,7 @@ spec:
       serviceAccountName: jenkins
       containers:
         - name: jenkins
-          image: neilcar/jenkins-demo:latest
+          image: clemenko/jenkins
           ports:
             - name: jenkinsweb
               containerPort: 8080
