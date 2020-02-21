@@ -104,6 +104,7 @@ spec:
       containers:
         - name: jenkins
           image: clemenko/jenkins
+          imagePullPolicy: Always
           ports:
             - name: jenkinsweb
               containerPort: 8080
