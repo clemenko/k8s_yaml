@@ -79,9 +79,7 @@ spec:
     app: jenkins
   type: LoadBalancer
   ports:
-#    - name: jenkinshttp
-#      port: 8080
-    - nodePort: 30200
+    - nodePort: 30100
       name: jenkinshttp
       protocol: TCP
       port: 8080
