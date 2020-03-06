@@ -6,14 +6,13 @@ metadata:
   name: nfs-pv
 spec:
   capacity:
-    storage: 1Gi
+    storage: 5Gi
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    path: /nfs
-    server: 10.20.0.XXX
-    readOnly: false
+    path: /opt/nfs
+    server: 157.245.255.14
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -63,6 +62,6 @@ spec:
   type: NodePort
   ports:
     - port: 80
-      nodePort: 32768
+      nodePort: 30768
   selector:
     app: nginx
