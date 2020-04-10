@@ -147,3 +147,17 @@ spec:
           serviceName: flask
           servicePort: 5000
 ---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: flask-ingressroute
+  namespace: flask
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`flask.dockr.life`)
+      kind: Rule
+      services:
+        - name: flask
+          port: 5000

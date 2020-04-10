@@ -61,3 +61,17 @@ spec:
           serviceName: whoami
           servicePort: 8000
 ---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: whoami-ingressroute
+  namespace: whoami
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`whoami.dockr.life`)
+      kind: Rule
+      services:
+        - name: whoami
+          port: 8000

@@ -141,3 +141,18 @@ spec:
             # This assumes http-svc exists and routes to healthy endpoints
             serviceName: jenkins
             servicePort: 8080
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jenkins-ingressroute
+  namespace: jenkins
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`jenkins.dockr.life`)
+      kind: Rule
+      services:
+        - name: jenkins
+          port: 8080
