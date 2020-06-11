@@ -143,8 +143,6 @@ metadata:
   name: traefik
   namespace: traefik
 spec:
-  clusterIP: 10.43.211.177
-  externalTrafficPolicy: Cluster
   ports:
     - name: web
       nodePort: 32286
@@ -196,7 +194,7 @@ spec:
           image: traefik
           args:
             - --api.insecure
-            - --accesslog
+#            - --accesslog
             - --entrypoints.web.Address=:80
             - --entrypoints.tcp.Address=:443
             - --metrics.prometheus=true
