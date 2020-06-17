@@ -97,15 +97,6 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: traefik.containo.us/v1alpha1
-kind: TLSOption
-metadata:
-  name: mintls13
-  namespace: traefik
-spec:
-  minVersion: VersionTLS13
-
----
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
