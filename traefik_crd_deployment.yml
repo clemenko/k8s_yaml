@@ -102,7 +102,6 @@ kind: TLSOption
 metadata:
   name: mintls13
   namespace: traefik
-
 spec:
   minVersion: VersionTLS13
 
