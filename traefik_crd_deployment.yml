@@ -145,17 +145,14 @@ metadata:
 spec:
   ports:
     - name: web
-      nodePort: 32286
       port: 80
       protocol: TCP
       targetPort: 80
     - name: tcp
-      nodePort: 30108
       port: 443
       protocol: TCP
       targetPort: 443
     - name: admin
-      nodePort: 30582
       port: 8080
       protocol: TCP
       targetPort: admin

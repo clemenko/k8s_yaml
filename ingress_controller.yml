@@ -17,35 +17,15 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: ingress-nginx
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - services
-      - endpoints
-      - secrets
-      - pods
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - extensions
-    resources:
-      - ingresses
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
+  - apiGroups: [""]
+    resources: ["services","endpoints","secrets","pods","ingresses"]
+    verbs: ["get","list","watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get","list","watch","create","update"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses","ingresses/status"]
+    verbs: ["get","list","watch","update"]
 --- 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -119,8 +99,6 @@ spec:
           requests:
             cpu: 10m
             memory: 20Mi
-      nodeSelector: 
-        role: ingress
 ---
 apiVersion: v1
 kind: Service
@@ -190,14 +168,14 @@ spec:
         - sh
         - -c
         - sysctl -w net.core.somaxconn=32768; sysctl -w net.ipv4.ip_local_port_range="1024 65535"
-        image: alpine:3.6
+        image: alpine
         imagePullPolicy: IfNotPresent
         name: sysctl
         securityContext:
           privileged: true
       containers:
         - name: nginx-ingress-controller
-          image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.24.1
+          image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.33.0
           args:
             - /nginx-ingress-controller
             - --default-backend-service=$(POD_NAMESPACE)/default-http-backend
@@ -241,8 +219,6 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
-      nodeSelector:
-        role: ingress
 ---
 apiVersion: v1
 kind: Service
@@ -254,7 +230,7 @@ metadata:
     app.kubernetes.io/part-of: ingress-nginx
 spec:
   externalTrafficPolicy: Cluster
-  type: NodePort
+  type: LoadBalancer
   selector:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/part-of: ingress-nginx
@@ -262,12 +238,10 @@ spec:
   - name: http
     port: 80
     targetPort: http
-    nodePort: 34080
     protocol: TCP
   - name: https
     port: 443
     targetPort: https
-    nodePort: 34443
     protocol: TCP
 
 ---

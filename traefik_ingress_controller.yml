@@ -109,20 +109,17 @@ metadata:
 spec:
   selector:
     k8s-app: traefik-ingress-lb
-  type: NodePort
+  type: LoadBalancer
   ports:
-    - nodePort: 30080
-      name: web
+    - name: web
       protocol: TCP
       port: 80
       targetPort: 80
-    - nodePort: 30088
-      name: dashboard
+    - name: dashboard
       protocol: TCP
       port: 8080
       targetPort: 8080
-    - nodePort: 30443
-      name: secure
+    - name: secure
       protocol: TCP
       port: 443
       targetPort: 443
@@ -138,7 +135,7 @@ metadata:
     traefik.ingress.kubernetes.io/rule-type: PathPrefix
 spec:
   rules:
-    - host: traefik.dockr.life
+    - host: traefik.stackrox.online
       http:
         paths:
         - path: /api || /dashboard
