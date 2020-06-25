@@ -28,3 +28,18 @@ spec:
           port: 443
   tls:
     passthrough: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-ingressroute
+  namespace: longhorn-system
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`longhorn.dockr.life`)
+      kind: Rule
+      services:
+        - name: longhorn-frontend
+          port: 80
