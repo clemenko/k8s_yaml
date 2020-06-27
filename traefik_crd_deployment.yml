@@ -193,6 +193,7 @@ spec:
             - --api.insecure
 #            - --accesslog
             - --entrypoints.web.Address=:80
+            - --entryPoints.web.forwardedHeaders.insecure
             - --entrypoints.tcp.Address=:443
             - --metrics.prometheus=true
             - --metrics.prometheus.addEntryPointsLabels=true
