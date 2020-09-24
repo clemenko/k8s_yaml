@@ -140,11 +140,11 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: traefik
-  namespace: traefik
   annotations:
     prometheus.io.scrape: 'true'
     prometheus.io/port: '8080'
+  name: traefik
+  namespace: traefik
 spec:
   ports:
     - name: web
