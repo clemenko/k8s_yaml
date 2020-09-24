@@ -141,7 +141,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    prometheus.io.scrape: 'true'
+    prometheus.io/scrape: 'true'
     prometheus.io/port: '8080'
   name: traefik
   namespace: traefik
