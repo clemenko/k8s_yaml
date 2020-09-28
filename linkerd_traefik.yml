@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-ingressroute
+  namespace: linkerd
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host('linkerd.dockr.life')
+      kind: Rule
+      services:
+        - name: linkerd-web
+          port: 8084
