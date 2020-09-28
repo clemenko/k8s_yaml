@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host('linkerd.dockr.life')
+    - match: Host(`linkerd.dockr.life`)
       kind: Rule
       services:
         - name: linkerd-web
