@@ -1,14 +1,14 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: traefik-ingressroute
-  namespace: linkerd
+  name: openfaas-ir
+  namespace: openfaas
 spec:
   entryPoints:
     - web
   routes:
-    - match: Host('linkerd.dockr.life')
+    - match: Host(`openfaas.dockr.life`)
       kind: Rule
       services:
-        - name: linkerd-web
-          port: 8084
+        - name: gateway-external
+          port: 8080
