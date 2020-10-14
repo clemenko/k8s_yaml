@@ -1,0 +1,181 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: graylog
+  labels:
+    istio-injection: disabled
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: graylog
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      initContainers:
+      - name: init-sysctl
+        image: busybox:1.30
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      containers:
+      - image:  docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+        name: elasticsearch
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+  namespace: graylog
+  labels:
+    app: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  clusterIP: None
+  ports:
+    - port: 9200
+      name: rest
+    - port: 9300
+      name: inter-node
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graylog
+  namespace: graylog
+  labels:
+    app: graylog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: graylog
+  template:
+    metadata:
+      labels:
+        app: graylog
+    spec:
+      containers:
+      - env:
+        - name: GRAYLOG_HTTP_EXTERNAL_URI
+          value: http://graylog.dockr.life/
+        - name: GRAYLOG_PASSWORD_SECRET
+          value: g0ABP9MJnWCjWtBX9JHFgjKAmD3wGXP3E0JQNOKlquDHnCn5689QAF8rRL66HacXLPA6fvwMY8BZoVVw0JqHnSAZorDDOdCk
+        - name: GRAYLOG_ROOT_PASSWORD_SHA2
+          value: ff1fabb33af42c3c19f20a00bbf206edd28ba1da95ca666e8101e7517c85057c
+        - name: GRAYLOG_ELASTICSEARCH_HOSTS
+          value: http://elasticsearch:9200
+        - name: GRAYLOG_MONGODB_URI
+          value: mongodb://mongo:27017/graylog
+        image: graylog/graylog:3.3.8-1
+        name: graylog
+        resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: graylog
+  name: graylog
+  namespace: graylog
+spec:
+  type: NodePort
+  ports:
+  - name: "9000"
+    port: 9000
+    targetPort: 9000
+    #nodePort: 32328
+  - name: "12201"
+    port: 12201
+    targetPort: 12201
+  selector:
+    app: graylog
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: graylog
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - image: mongo
+        name: mongo
+        volumeMounts:
+        - name: mongo-persistent-storage
+          mountPath: /data/db
+        ports:
+        - containerPort: 27017
+      volumes:
+      - name: mongo-persistent-storage
+        persistentVolumeClaim:
+          claimName: mongo-persistent-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-persistent-claim
+  namespace: graylog
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mongo
+  name: mongo
+  namespace: graylog
+spec:
+  ports:
+  - name: "27017"
+    port: 27017
+    targetPort: 27017
+  selector:
+    app: mongo
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: graylog-ingressroute
+  namespace: graylog
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`graylog.dockr.life`)
+      kind: Rule
+      services:
+        - name: graylog
+          port: 9000
