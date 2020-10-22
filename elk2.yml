@@ -1,0 +1,425 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: elk
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+  namespace: elk
+  labels:
+    app: elasticsearch
+spec:
+  selector:
+    app: elasticsearch
+  clusterIP: None
+  ports:
+    - port: 9200
+      name: rest
+    - port: 9300
+      name: inter-node
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: es-cluster
+  namespace: elk
+spec:
+  serviceName: elasticsearch # provides association with our previously created elasticsearch Service.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.5.0
+        resources:
+            limits:
+              cpu: 1000m
+              memory: "2Gi"
+            requests:
+              cpu: 100m
+              memory: "2Gi"
+        ports:
+        - containerPort: 9200 # for REST API.
+          name: rest
+          protocol: TCP
+        - containerPort: 9300 # for inter-node communication.
+          name: inter-node
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/elasticsearch/data
+        env:
+          - name: cluster.name
+            value: k8s-logs
+          - name: node.name
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          # sets a list of master-eligible nodes in the cluster.
+          - name: discovery.seed_hosts
+            value: "es-cluster-0.elasticsearch, es-cluster-1.elasticsearch"
+          # specifies a list of master-eligible nodes that will participate in the master election process.
+          - name: cluster.initial_master_nodes
+            value: "es-cluster-0,es-cluster-1"
+          - name: ES_JAVA_OPTS
+            value: "-Xms1g -Xmx1g"
+      # Each init containers run to completion in the specified order.
+      initContainers:
+      # By default k8s mounts the data directory as root, which renders it inaccessible to Elasticsearch.
+      - name: fix-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"]
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: data
+          mountPath: /usr/share/elasticsearch/data
+      # To prevent OOM errors.
+      - name: increase-vm-max-map
+        image: busybox
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      # Increase the max number of open file descriptors. 
+      - name: increase-fd-ulimit
+        image: busybox
+        command: ["sh", "-c", "ulimit -n 65536"]
+        securityContext:
+          privileged: true
+  # PersistentVolumes for the Elasticsearch pods.
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        app: elasticsearch
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: longhorn
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat
+  namespace: elk
+  labels:
+    k8s-app: filebeat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: filebeat
+  labels:
+    k8s-app: filebeat
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - namespaces
+  - pods
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: filebeat
+subjects:
+- kind: ServiceAccount
+  namespace: elk
+  name: filebeat
+roleRef:
+  kind: ClusterRole
+  name: filebeat
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: elk
+  labels:
+    k8s-app: filebeat
+data:
+  filebeat.yml: |-
+    filebeat.inputs:
+    - type: container
+      enabled: true
+      paths:
+        - /var/log/containers/*.log
+      # If you setup helm for your cluster and want to investigate its logs, comment out this section.
+      exclude_files: ['tiller-deploy-*']
+
+      # To be used by Logstash for distinguishing index names while writing to elasticsearch.
+      fields_under_root: true
+      fields:
+        index_prefix: k8s-logs
+
+      # Enrich events with k8s, cloud metadata 
+      processors:
+        - add_cloud_metadata:
+        - add_host_metadata:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+    # Send events to Logstash.
+    output.logstash:
+      enabled: true
+      hosts: ["logstash:9600"]
+
+    # You can set logging.level to debug to see the generated events by the running filebeat instance.
+    logging.level: info
+    logging.to_files: false
+    logging.files:
+      path: /var/log/filebeat
+      name: filebeat
+      keepfiles: 7
+      permissions: 0644
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: elk
+  labels:
+    k8s-app: filebeat
+spec:  
+  selector:
+    matchLabels:
+      k8s-app: filebeat
+  template:
+    metadata:
+      labels:
+        k8s-app: filebeat
+    spec:
+      # Refers to our previously defined ServiceAccount.
+      serviceAccountName: filebeat
+      terminationGracePeriodSeconds: 30
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: filebeat
+        image: docker.elastic.co/beats/filebeat:7.5.0
+        args: [
+          "-c", "/etc/filebeat.yml",
+          "-e",
+        ]
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        securityContext:
+          runAsUser: 0
+          # If using Red Hat OpenShift uncomment this:
+          #privileged: true
+        resources:       # comment out for using full speed 
+          limits:
+            memory: 200Mi
+          requests:
+            cpu: 500m
+            memory: 100Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/filebeat.yml
+          readOnly: true
+          subPath: filebeat.yml
+        - name: data
+          mountPath: /usr/share/filebeat/data
+        - name: varlibdockercontainers
+          mountPath: /var/log/containers/
+          readOnly: true
+      volumes:
+      # Bind previously defined ConfigMap
+      - name: config
+        configMap:
+          defaultMode: 0600
+          name: filebeat-config
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/log/containers/
+      - name: varlog
+        hostPath:
+          path: /var/log
+      # data folder stores a registry of read status for all files, so we don't send everything again on a Filebeat pod restart
+      - name: data
+        hostPath:
+          path: /var/lib/filebeat-data
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: elk
+data:
+  logstash.conf: |-
+      input {
+        beats {
+            port => "9600"
+        }
+      }
+  
+      filter {
+
+        # Container logs are received with variable named index_prefix 
+        # Since it is in json format, we can decode it via json filter plugin.
+        if [index_prefix] == "k8s-logs" {
+
+          if [message] =~ /^\{.*\}$/ {
+            json {
+              source => "message"
+              skip_on_invalid_json => true
+            }
+          }
+          
+        }
+
+        # do not expose index_prefix field to kibana
+        mutate {
+          # @metadata is not exposed outside of Logstash by default.
+          add_field => { "[@metadata][index_prefix]" => "%{index_prefix}-%{+YYYY.MM.dd}" }
+          # since we added index_prefix to metadata, we no longer need ["index_prefix"] field.
+          remove_field => ["index_prefix"]
+        }
+
+      }
+  
+      output {
+        # You can uncomment this line to investigate the generated events by the logstash.
+        # stdout { codec => rubydebug }
+        elasticsearch {
+            hosts => "elasticsearch:9200"
+            template_overwrite => false
+            manage_template => false
+            # The events will be stored in elasticsearch under previously defined index_prefix value.  
+            index => "%{[@metadata][index_prefix]}"
+            sniffing => false
+        }
+      }
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: logstash
+  namespace: elk
+spec:
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      hostname: logstash
+      containers:
+      - name: logstash
+        ports:      
+          - containerPort: 9600
+            name: logstash
+        image: docker.elastic.co/logstash/logstash:7.5.0
+        volumeMounts:
+        - name: logstash-config
+          mountPath: /usr/share/logstash/pipeline/
+        command:
+        - logstash
+      volumes:
+      # Previously defined ConfigMap object.
+      - name: logstash-config
+        configMap:
+          name: logstash-config
+          items:
+          - key: logstash.conf
+            path: logstash.conf
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: logstash
+  namespace: elk
+spec:
+  type: NodePort
+  selector:
+    app: logstash
+  ports:  
+  - protocol: TCP
+    port: 9600
+    targetPort: 9600
+    name: logstash
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: elk
+  labels:
+    k8s-app: kibana
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kibana
+  template:
+    metadata:
+      labels:
+        k8s-app: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: docker.elastic.co/kibana/kibana:7.5.0
+        resources:
+          requests:
+            cpu: 100m
+          limits:
+            cpu: 1000m
+        env:
+          - name: ELASTICSEARCH_URL
+            value: http://elasticsearch:9200
+        ports:
+        - containerPort: 5601
+          name: ui
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: elk
+  labels:
+    k8s-app: kibana
+spec:
+  ports:
+  - port: 5601
+    protocol: TCP
+    targetPort: ui
+  selector:
+    k8s-app: kibana
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: elk-ingressroute
+  namespace: elk
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`elk.dockr.life`)
+      kind: Rule
+      services:
+        - name: kibana
+          port: 5601
