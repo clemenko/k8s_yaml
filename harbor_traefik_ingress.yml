@@ -1,0 +1,15 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: harbor-ingresstcp
+  namespace: harbor
+spec:
+  entryPoints:
+    - tcp
+  routes:
+    - match: HostSNI(`harbor.dockr.life`)
+      services:
+        - name: harbor
+          port: 443
+  tls:
+    passthrough: true
