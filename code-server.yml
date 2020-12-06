@@ -9,11 +9,12 @@ metadata:
  name: code-server
  namespace: code-server
 spec:
- ports:
- - port: 80
-   targetPort: 8080
- selector:
-   app: code-server
+  ports:
+  - port: 8443
+    targetPort: 8443
+  type: NodePort
+  selector:
+    app: code-server
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,15 +42,17 @@ spec:
         - name: workdir
           mountPath: "/opt/"
       containers:
-      - image: codercom/code-server:latest
+      - image: ghcr.io/linuxserver/code-server #codercom/code-server:latest
         imagePullPolicy: Always
         name: code-server
         env:
         - name: PASSWORD
           value: "Pa22word"
+        - name: SUDO_PASSWORD
+          value: "Pa22word"
         volumeMounts:
           - name: workdir
-            mountPath: /usr/local/bin/
+            mountPath: /opt/
       volumes:
       - name: workdir
         emptyDir: {}
@@ -67,4 +70,4 @@ spec:
       kind: Rule
       services:
         - name: code-server
-          port: 80
+          port: 8443
