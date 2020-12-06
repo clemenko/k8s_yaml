@@ -32,6 +32,14 @@ spec:
       labels:
         app: code-server
     spec:
+      initContainers:
+      - name: setup
+        image: alpine
+        command: ["/bin/sh","-c"]
+        args: ["apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/kubectl && curl -#Lk -u admin:Pa22word https://stackrox.dockr.life/api/cli/download/roxctl-linux -o /opt/roxctl && chmod 755 /opt/kubectl /opt/roxctl"]
+        volumeMounts:
+        - name: workdir
+          mountPath: "/opt/"
       containers:
       - image: codercom/code-server:latest
         imagePullPolicy: Always
@@ -39,6 +47,12 @@ spec:
         env:
         - name: PASSWORD
           value: "Pa22word"
+        volumeMounts:
+          - name: workdir
+            mountPath: /usr/local/bin/
+      volumes:
+      - name: workdir
+        emptyDir: {}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
