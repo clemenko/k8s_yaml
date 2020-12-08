@@ -34,7 +34,31 @@ spec:
         name: elasticsearch
         ports:
         - containerPort: 9200
+          name: http
+          protocol: TCP
         - containerPort: 9300
+          name: transport
+          protocol: TCP
+        env:
+        - name: discovery.type
+          value: single-node
+        - name: bootstrap.memory_lock
+          value: "false"
+        - name: ES_JAVA_OPTS
+          value: -Xms512m -Xmx512m
+        - name: http.host
+          value: 0.0.0.0
+        - name: network.host
+          value: 0.0.0.0
+        - name: transport.host
+          value: localhost
+        resources:
+          limits:
+            cpu: 250m
+            memory: 1Gi
+          requests:
+            cpu: 150m
+            memory: 512Mi
 ---
 kind: Service
 apiVersion: v1
@@ -82,9 +106,37 @@ spec:
           value: http://elasticsearch:9200
         - name: GRAYLOG_MONGODB_URI
           value: mongodb://mongo:27017/graylog
-        image: graylog/graylog:3.3.8-1
+        - name: GRAYLOG_SERVER_JAVA_OPTS
+          value: -Xms1g -Xmx1g -XX:NewRatio=1 -XX:MaxMetaspaceSize=256m -server -XX:+ResizeTLAB
+            -XX:+UseConcMarkSweepGC -XX:+CMSConcurrentMTEnabled -XX:+CMSClassUnloadingEnabled
+            -XX:+UseParNewGC -XX:-OmitStackTraceInFastThrow
+        - name: GRAYLOG_HTTP_BIND_ADDRESS
+          value: 0.0.0.0:9000
+        image: graylog/graylog:4.0.1
         name: graylog
         resources: {}
+        ports:
+        - containerPort: 9000
+          name: http
+          protocol: TCP
+        - containerPort: 12201
+          name: gelf-udp
+          protocol: UDP
+        - containerPort: 12201
+          name: gelf-tcp
+          protocol: TCP
+        - containerPort: 1514
+          name: syslog-tcp
+          protocol: TCP
+        - containerPort: 1514
+          name: syslog-udp
+          protocol: UDP
+        - containerPort: 5555
+          name: 5555-tcp
+          protocol: TCP
+        - containerPort: 5555
+          name: 5555-udp
+          protocol: UDP
       restartPolicy: Always
 status: {}
 ---
@@ -101,10 +153,20 @@ spec:
   - name: "9000"
     port: 9000
     targetPort: 9000
-    #nodePort: 32328
-  - name: "12201"
+  - name: "514"
+    port: 514
+    targetPort: 514
+  - name: 514-udp
+    port: 514
+    protocol: UDP
+    targetPort: 514
+  - name: 12201-udp
     port: 12201
+    protocol: UDP
     targetPort: 12201
+  - name: "5555"
+    port: 5555
+    targetPort: 5555
   selector:
     app: graylog
 ---
