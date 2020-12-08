@@ -125,17 +125,11 @@ spec:
         - containerPort: 12201
           name: gelf-tcp
           protocol: TCP
-        - containerPort: 1514
+        - containerPort: 514
           name: syslog-tcp
           protocol: TCP
-        - containerPort: 1514
+        - containerPort: 514
           name: syslog-udp
-          protocol: UDP
-        - containerPort: 5555
-          name: 5555-tcp
-          protocol: TCP
-        - containerPort: 5555
-          name: 5555-udp
           protocol: UDP
       restartPolicy: Always
 status: {}
