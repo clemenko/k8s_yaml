@@ -112,14 +112,14 @@ spec:
             - name: jenkinsweb
               containerPort: 8080
           volumeMounts:
-          - name: jenkinshomepv
-            mountPath: "/var/jenkins_home"
+#          - name: jenkinshomepv
+#            mountPath: "/var/jenkins_home"
           - name: docker-sock
             mountPath: "/var/run/docker.sock"
       volumes:
-      - name: jenkinshomepv
-        persistentVolumeClaim:
-          claimName: jenkinshome
+#      - name: jenkinshomepv
+#        persistentVolumeClaim:
+#          claimName: jenkinshome
       - name: docker-sock
         hostPath:
             path: /var/run/docker.sock
