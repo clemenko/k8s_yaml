@@ -227,4 +227,4 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: traefik
-  targetCPUUtilizationPercentage: 150
+  targetCPUUtilizationPercentage: 100
