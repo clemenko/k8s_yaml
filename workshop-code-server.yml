@@ -63,8 +63,8 @@ spec:
         volumeMounts:
           - name: workdir
             mountPath: /opt/
-        - name: ssh
-          mountPath: /root/.ssh/
+          - name: ssh
+            mountPath: /root/.ssh/
       volumes:
       - name: workdir
         emptyDir: {}
