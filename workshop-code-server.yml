@@ -64,7 +64,7 @@ spec:
           - name: workdir
             mountPath: /opt/
           - name: ssh
-            mountPath: /root/.ssh/
+            mountPath: /root/
       volumes:
       - name: workdir
         emptyDir: {}
@@ -73,7 +73,7 @@ spec:
           path: /etc/rancher/k3s/k3s.yaml
       - name: ssh
         hostPath:
-          path: /root/.ssh/
+          path: /root/
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
