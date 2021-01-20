@@ -112,7 +112,7 @@ rules:
     resources: ["ingresses/status"]
     verbs: ["update"]
   - apiGroups: ["traefik.containo.us"]
-    resources: ["middlewares","ingressroutes","traefikservices","ingressroutetcps","ingressrouteudps","tlsoptions","tlsstores"]
+    resources: ["middlewares","ingressroutes","traefikservices","ingressroutetcps","ingressrouteudps","tlsoptions","tlsstores","serverstransports"]
     verbs: ["get","list","watch"]
 ---
 kind: ClusterRoleBinding
