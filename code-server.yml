@@ -66,9 +66,9 @@ spec:
       volumes:
       - name: workdir
         emptyDir: {}
-      - name: kubeconfig
-        hostPath:
-          path: /etc/rancher/k3s/k3s.yaml
+#      - name: kubeconfig
+#        hostPath:
+#          path: /etc/rancher/k3s/k3s.yaml
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
