@@ -193,7 +193,7 @@ spec:
       serviceAccountName: traefik-ingress-controller
       containers:
         - name: traefik
-          image: traefik:v2.3
+          image: traefik
           args:
             - --api.insecure
 #            - --accesslog
@@ -229,3 +229,18 @@ spec:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
   
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-ingressroute
+  namespace: traefik
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`traefik.dockr.life`)
+      kind: Rule
+      services:
+        - name: traefik
+          port: 8080

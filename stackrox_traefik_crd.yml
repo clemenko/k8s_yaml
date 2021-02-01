@@ -1,17 +1,3 @@
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  name: traefik-ingressroute
-  namespace: traefik
-spec:
-  entryPoints:
-    - web
-  routes:
-    - match: Host(`traefik.dockr.life`)
-      kind: Rule
-      services:
-        - name: traefik
-          port: 8080
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRouteTCP
