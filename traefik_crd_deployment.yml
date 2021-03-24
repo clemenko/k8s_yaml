@@ -221,6 +221,7 @@ spec:
             - --providers.kubernetescrd
             - --global.sendAnonymousUsage=false
             - --log.level=DEBUG
+            - --TRAEFIK_PILOT_DASHBOARD=false
           ports:
             - name: web
               containerPort: 80
