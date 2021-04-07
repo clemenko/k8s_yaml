@@ -10,8 +10,8 @@ metadata:
  namespace: code-server
 spec:
   ports:
-  - port: 8443
-    targetPort: 8443
+  - port: 8080
+    targetPort: 8080
   type: NodePort
   selector:
     app: code-server
@@ -78,4 +78,4 @@ spec:
       kind: Rule
       services:
         - name: code-server
-          port: 8443
+          port: 8080
