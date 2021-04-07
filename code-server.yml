@@ -44,7 +44,7 @@ spec:
         - name: workdir
           mountPath: "/opt/"
       containers:
-      - image: ghcr.io/linuxserver/code-server #codercom/code-server:latest
+      - image: codercom/code-server:latest #ghcr.io/linuxserver/code-server 
         imagePullPolicy: Always
         name: code-server
         env:
