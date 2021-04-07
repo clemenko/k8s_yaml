@@ -10,8 +10,8 @@ metadata:
  namespace: code-server
 spec:
   ports:
-  - port: 8080
-    targetPort: 8080
+  - port: 8443
+    targetPort: 8443
   type: NodePort
   selector:
     app: code-server
@@ -39,12 +39,12 @@ spec:
       - name: setup
         image: alpine
         command: ["/bin/sh","-c"]
-        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#Lk https://andy.info/rox/roxctl_Linux_3.0.57.2 -o /opt/bin/roxctl && chmod 755 /opt/bin/kubectl /opt/bin/roxctl"]
+        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#Lk https://andyc.info/rox/roxctl_Linux_3.0.57.2 -o /opt/bin/roxctl && chmod 755 /opt/bin/kubectl /opt/bin/roxctl"]
         volumeMounts:
         - name: workdir
           mountPath: "/opt/"
       containers:
-      - image: codercom/code-server:latest #ghcr.io/linuxserver/code-server 
+      - image: linuxserver/code-server  #codercom/code-server:latest 
         imagePullPolicy: Always
         name: code-server
         env:
@@ -78,4 +78,4 @@ spec:
       kind: Rule
       services:
         - name: code-server
-          port: 8080
+          port: 8443

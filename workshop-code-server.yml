@@ -39,7 +39,7 @@ spec:
       - name: setup
         image: alpine
         command: ["/bin/sh","-c"]
-        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#L https://andyc.info/rox/roxctl_Linux_3.0.55.0 -o /opt/bin/roxctl && cp /config/workspace/kube_config /opt/kube_config && chmod 755 /opt/bin/kubectl /opt/bin/roxctl /opt/kube_config"]
+        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#L https://andyc.info/rox/roxctl_Linux_3.0.57.2 -o /opt/bin/roxctl && cp /config/workspace/kube_config /opt/kube_config && chmod 755 /opt/bin/kubectl /opt/bin/roxctl /opt/kube_config"]
         volumeMounts:
         - name: workdir
           mountPath: "/opt/"
