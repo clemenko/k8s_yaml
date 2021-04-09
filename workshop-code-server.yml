@@ -35,16 +35,16 @@ spec:
     spec:
       nodeSelector:
         node-role.kubernetes.io/master: "true"
-      initContainers:
-      - name: setup
-        image: alpine
-        command: ["/bin/sh","-c"]
-        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#L https://andyc.info/rox/roxctl_Linux_3.0.57.2 -o /opt/bin/roxctl && cp /config/workspace/kube_config /opt/kube_config && chmod 755 /opt/bin/kubectl /opt/bin/roxctl /opt/kube_config"]
-        volumeMounts:
-        - name: workdir
-          mountPath: "/opt/"
-        - name: kubeconfig
-          mountPath: /config/workspace/kube_config
+#      initContainers:
+#      - name: setup
+#        image: alpine
+#        command: ["/bin/sh","-c"]
+#        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#L https://andyc.info/rox/roxctl_Linux_3.0.58.0 -o /opt/bin/roxctl && cp /config/workspace/kube_config /opt/kube_config && chmod 755 /opt/bin/kubectl /opt/bin/roxctl /opt/kube_config"]
+#        volumeMounts:
+#        - name: workdir
+#          mountPath: "/opt/"
+#        - name: kubeconfig
+#          mountPath: /config/workspace/kube_config
       containers:
       - image: ghcr.io/linuxserver/code-server #codercom/code-server:latest
         imagePullPolicy: Always
@@ -65,6 +65,8 @@ spec:
             mountPath: /opt/
           - name: ssh
             mountPath: /root/
+          - name: bin
+            mountPath: /opt/bin/
           - name: kubeconfig
             mountPath: /root/.kube/config
       volumes:
@@ -76,6 +78,9 @@ spec:
       - name: ssh
         hostPath:
           path: /root/
+      - name: bin
+        hostPath:
+          path: /usr/local/bin
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
