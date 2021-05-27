@@ -1,14 +1,11 @@
 #CRD
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: ingressroutes.traefik.containo.us
 spec:
   group: traefik.containo.us
-  versions: 
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: IngressRoute
     plural: ingressroutes
@@ -16,16 +13,13 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: middlewares.traefik.containo.us
 spec:
   group: traefik.containo.us
-  versions:  
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: Middleware
     plural: middlewares
@@ -33,16 +27,13 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: ingressroutetcps.traefik.containo.us
 spec:
   group: traefik.containo.us
-  versions: 
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: IngressRouteTCP
     plural: ingressroutetcps
@@ -50,16 +41,13 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: ingressrouteudps.traefik.containo.us
 spec:
   group: traefik.containo.us
-  versions: 
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: IngressRouteUDP
     plural: ingressrouteudps
@@ -67,16 +55,13 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: tlsoptions.traefik.containo.us
 spec:
   group: traefik.containo.us
-  versions: 
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: TLSOption
     plural: tlsoptions
@@ -84,16 +69,13 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: tlsstores.traefik.containo.us
 spec:
   group: traefik.containo.us
-  versions: 
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: TLSStore
     plural: tlsstores
@@ -101,16 +83,13 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: traefikservices.traefik.containo.us
 spec:
   group: traefik.containo.us
-  versions: 
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: TraefikService
     plural: traefikservices
@@ -118,17 +97,14 @@ spec:
   scope: Namespaced
 
 ---
-apiVersion: apiextensions.k8s.io/v1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: serverstransports.traefik.containo.us
 
 spec:
   group: traefik.containo.us
-  versions: 
-    - name: v1alpha1
-      served: true
-      storage: true
+  version: v1alpha1
   names:
     kind: ServersTransport
     plural: serverstransports
