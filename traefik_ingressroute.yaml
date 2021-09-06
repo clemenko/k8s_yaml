@@ -8,7 +8,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`traefik.dockr.life`)
+    - match: Host(`ingress.dockr.life`)
       kind: Rule
       services:
         - name: traefik

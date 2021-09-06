@@ -130,22 +130,25 @@ spec:
     protocol: TCP
     port: 27017
 ---
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: flask
   namespace: flask
   annotations:
-#    nginx.ingress.kubernetes.io/rewrite-target: /  
+    kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
   - host: app.dockr.life
     http:
       paths:
       - path: /
+        pathType: Prefix
         backend:
-          serviceName: flask
-          servicePort: 5000
+          service:
+            name: flask
+            port:
+              number: 5000
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
