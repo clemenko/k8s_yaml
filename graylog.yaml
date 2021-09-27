@@ -30,7 +30,7 @@ spec:
         securityContext:
           privileged: true
       containers:
-      - image:  docker.elastic.co/elasticsearch/elasticsearch:7.12.1
+      - image:  docker.elastic.co/elasticsearch/elasticsearch:7.15.0
         name: elasticsearch
         ports:
         - containerPort: 9200
@@ -112,7 +112,7 @@ spec:
             -XX:+UseParNewGC -XX:-OmitStackTraceInFastThrow
         - name: GRAYLOG_HTTP_BIND_ADDRESS
           value: 0.0.0.0:9000
-        image: graylog/graylog:4.0
+        image: graylog/graylog:4.1
         name: graylog
         resources: {}
         ports:
