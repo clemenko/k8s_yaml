@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: traefik
+  namespace: traefik
+  labels:
+    app: traefik
+spec:
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      containers:
+      - name: traefik
+        image: traefik
+        args:
+        - --api.insecure
+        - --entrypoints.web.Address=:80
+        - --entryPoints.web.forwardedHeaders.insecure
+        - --entrypoints.tcp.Address=:443
+        - --metrics.prometheus=true
+        - --metrics.prometheus.addEntryPointsLabels=true
+        - --metrics.prometheus.addServicesLabels=true
+        - --providers.kubernetescrd
+        - --global.sendAnonymousUsage=false
+        - --log.level=DEBUG
+        - --pilot.dashboard=false
+        ports:
+        - name: web
+          containerPort: 80
+        - name: tcp
+          containerPort: 443
+        - name: admin
+          containerPort: 8080
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - ALL    
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: linux
+      restartPolicy: Always
+status:
+  currentNumberScheduled: 3
+  desiredNumberScheduled: 3
+  numberAvailable: 3
+  numberMisscheduled: 0
+  numberReady: 3
+  observedGeneration: 1
+  updatedNumberScheduled: 3
