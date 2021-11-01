@@ -53,7 +53,7 @@ spec:
         - name: SUDO_PASSWORD
           value: "Pa22word"
         - name: KUBECONFIG
-          value: /opt/kube_config
+          value: /opt/kube/config
         - name: SHELL
           value: "/bin/bash"
         - name: PATH
@@ -61,9 +61,14 @@ spec:
         volumeMounts:
           - name: workdir
             mountPath: /opt/
+          - name: kubeconfig
+            mountPath: /opt/kube/
       volumes:
       - name: workdir
         emptyDir: {}
+      - name: kubeconfig
+        hostPath:
+          path: /opt/kube/
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
