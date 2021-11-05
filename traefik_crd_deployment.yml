@@ -1697,16 +1697,19 @@ spec:
           args:
             - --api.insecure
 #            - --accesslog
+            - --global.checknewversion
             - --entrypoints.web.Address=:80
             - --entryPoints.web.forwardedHeaders.insecure
             - --entrypoints.tcp.Address=:443
             - --metrics.prometheus=true
             - --metrics.prometheus.addEntryPointsLabels=true
             - --metrics.prometheus.addServicesLabels=true
-            - --providers.kubernetescrd
             - --global.sendAnonymousUsage=false
-            - --log.level=DEBUG
+            - --log.level=INFO
             - --pilot.dashboard=false
+            - --providers.kubernetescrd
+            - --providers.kubernetesingress
+            - --providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik
           ports:
             - name: web
               containerPort: 80
