@@ -45,6 +45,10 @@ spec:
       - name: keycloak
         image: quay.io/keycloak/keycloak
         env:
+        - name: KEYCLOAK_FRONTEND_URL
+          value: "keycloak.dockr.life"
+        - name: KEYCLOAK_HOSTNAME
+          value: "keycloak.dockr.life"
         - name: KEYCLOAK_USER
           value: "admin"
         - name: KEYCLOAK_PASSWORD
