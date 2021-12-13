@@ -1,0 +1,79 @@
+# clemenko
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: slides
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slides
+  namespace: slides
+  labels:
+    app: slides
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: slides
+  template:
+    metadata:
+      labels:
+        app: slides
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+      containers:
+      - name: slides
+        securityContext:
+          allowPrivilegeEscalation: false
+        image: webpronl/reveal-md
+        ports:
+        - containerPort: 1948
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: slides
+            mountPath: /slides
+      volumes:
+      - name: slides
+        hostPath:
+          path: /opt/slides
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: slides
+    kubernetes.io/name: "slides"
+  name: slides
+  namespace: slides
+spec:
+  selector:
+    app: slides
+  type: NodePort
+  ports:
+  - name: slides
+    protocol: TCP
+    port: 5000
+    targetPort: 1948
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: slides-ingressroute
+  namespace: slides
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`slides.dockr.life`)
+      kind: Rule
+      services:
+        - name: slides
+          port: 5000
