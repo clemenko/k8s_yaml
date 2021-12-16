@@ -1,0 +1,16 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: rancher
+  namespace: cattle-system
+spec:
+  entryPoints:
+    - tcp
+  routes:
+    - match: HostSNI(`rancher.dockr.life`)
+      services:
+        - name: rancher
+          port: 443
+  tls:
+    passthrough: true
