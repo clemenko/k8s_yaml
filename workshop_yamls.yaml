@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`traefik.$NUM.stackrox.live`)
+    - match: Host(`traefik.$NUM.shirtmullet.com`)
       kind: Rule
       services:
         - name: traefik
@@ -22,7 +22,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`longhorn.$NUM.stackrox.live`)
+    - match: Host(`longhorn.$NUM.shirtmullet.com`)
       kind: Rule
       services:
         - name: longhorn-frontend
@@ -38,7 +38,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`longhorn.$NUM.stackrox.live`)
+    - match: Host(`longhorn.$NUM.shirtmullet.com`)
       kind: Rule
       services:
         - name: longhorn-frontend
