@@ -13,7 +13,7 @@ metadata:
   labels:
     app: flask
 spec:
-  replicas: 4
+  replicas: 3
   strategy:
     rollingUpdate:
       maxSurge: 0
@@ -56,9 +56,7 @@ spec:
       containers:
       - name: redis
         image: redis
-        command:
-          - redis-server
-          - "--save 60 1 --loglevel warning"
+        args: ["--appendonly", "yes"]
         securityContext:
           allowPrivilegeEscalation: false
         ports:
@@ -128,7 +126,7 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-  - host: app.dockr.life
+  - host: flask.dockr.life
     http:
       paths:
       - path: /
