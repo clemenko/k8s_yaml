@@ -70,6 +70,17 @@ spec:
         persistentVolumeClaim:
           claimName: redis
 ---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis
+  namespace: flask
+stringData:
+  CRYPTO_KEY_VALUE: "sEFA/gCHH68nVKits2EthgpctAYvDUR7mQA23CFd4gLeENP2Qb9o3A=="
+  CRYPTO_KEY_PROVIDER: "secret"
+
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -78,6 +89,7 @@ metadata:
   labels:
     app: redis
 spec:
+  storageClassName: "longhorn-crypto-per-volume"
   accessModes: 
     - ReadWriteOnce
   resources:
