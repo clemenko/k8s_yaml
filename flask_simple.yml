@@ -59,6 +59,8 @@ spec:
         args: ["--appendonly", "yes"]
         securityContext:
           allowPrivilegeEscalation: false
+          seLinuxOptions:
+            level: "s0:c123,c456"
         ports:
         - containerPort: 6379
         volumeMounts:
