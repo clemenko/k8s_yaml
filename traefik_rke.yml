@@ -19,6 +19,7 @@ spec:
       containers:
       - name: traefik
         image: traefik
+        imagePullPolicy: IfNotPresent
         args:
         - --api.insecure
         - --entrypoints.web.Address=:80
@@ -45,16 +46,7 @@ spec:
             - NET_BIND_SERVICE
             drop:
             - ALL    
-      dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       nodeSelector:
         kubernetes.io/os: linux
       restartPolicy: Always
-status:
-  currentNumberScheduled: 3
-  desiredNumberScheduled: 3
-  numberAvailable: 3
-  numberMisscheduled: 0
-  numberReady: 3
-  observedGeneration: 1
-  updatedNumberScheduled: 3
