@@ -1721,17 +1721,3 @@ spec:
             - ALL    
       hostNetwork: true
 ---
-
-apiVersion: autoscaling/v1
-kind: HorizontalPodAutoscaler
-metadata:
-  name: traefik
-  namespace: traefik
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: traefik
-  minReplicas: 1
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 80
