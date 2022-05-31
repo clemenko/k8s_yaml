@@ -72,7 +72,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`slides.dockr.life`)
+    - match: Host(`slides.rfed.io`)
       kind: Rule
       services:
         - name: slides

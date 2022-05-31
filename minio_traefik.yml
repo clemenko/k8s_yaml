@@ -8,7 +8,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`s3.dockr.life`)
+    - match: Host(`s3.rfed.io`)
       kind: Rule
       services:
         - name: minio
@@ -23,7 +23,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`minio.dockr.life`)
+    - match: Host(`minio.rfed.io`)
       kind: Rule
       services:
         - name: minio-console

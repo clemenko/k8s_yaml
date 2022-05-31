@@ -1856,7 +1856,7 @@ spec:
   entryPoints:
     - tcp
   routes:
-    - match: HostSNI(`harbor.dockr.life`)
+    - match: HostSNI(`harbor.rfed.io`)
       services:
         - name: harbor
           port: 443

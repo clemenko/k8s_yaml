@@ -7,7 +7,7 @@ metadata:
   namespace: keycloak
 spec:
   rules:
-  - host: keycloak.dockr.life
+  - host: keycloak.rfed.io
     http:
       paths:
       - backend:

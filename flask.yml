@@ -145,7 +145,7 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-  - host: app.dockr.life
+  - host: app.rfed.io
     http:
       paths:
       - path: /
@@ -165,7 +165,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`flask.dockr.life`)
+    - match: Host(`flask.rfed.io`)
       kind: Rule
       services:
         - name: flask

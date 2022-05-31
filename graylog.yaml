@@ -97,7 +97,7 @@ spec:
       containers:
       - env:
         - name: GRAYLOG_HTTP_EXTERNAL_URI
-          value: http://graylog.dockr.life/
+          value: http://graylog.rfed.io/
         - name: GRAYLOG_PASSWORD_SECRET
           value: g0ABP9MJnWCjWtBX9JHFgjKAmD3wGXP3E0JQNOKlquDHnCn5689QAF8rRL66HacXLPA6fvwMY8BZoVVw0JqHnSAZorDDOdCk
         - name: GRAYLOG_ROOT_PASSWORD_SHA2
@@ -230,7 +230,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`graylog.dockr.life`)
+    - match: Host(`graylog.rfed.io`)
       kind: Rule
       services:
         - name: graylog

@@ -133,7 +133,7 @@ metadata:
   namespace: jenkins
 spec:
   rules:
-    - host: jenkins.dockr.life
+    - host: jenkins.rfed.io
       http:
         paths:
         - path: /
@@ -151,7 +151,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`jenkins.dockr.life`)
+    - match: Host(`jenkins.rfed.io`)
       kind: Rule
       services:
         - name: jenkins

@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`longhorn.dockr.life`)
+    - match: Host(`longhorn.rfed.io`)
       kind: Rule
       services:
         - name: longhorn-frontend

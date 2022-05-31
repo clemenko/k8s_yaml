@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`openfaas.dockr.life`)
+    - match: Host(`openfaas.rfed.io`)
       kind: Rule
       services:
         - name: gateway-external

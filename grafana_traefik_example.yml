@@ -51,7 +51,7 @@ metadata:
     kubernetes.io/ingress.class: traefik
 spec:
   rules:
-  - host: graf.dockr.life
+  - host: graf.rfed.io
     http:
       paths:
       - path: /

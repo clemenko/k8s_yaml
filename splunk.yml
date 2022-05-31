@@ -62,7 +62,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`splunk.dockr.life`)
+    - match: Host(`splunk.rfed.io`)
       kind: Rule
       services:
         - name: splunk

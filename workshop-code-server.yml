@@ -91,7 +91,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`code.dockr.life`)
+    - match: Host(`code.rfed.io`)
       kind: Rule
       services:
         - name: code-server

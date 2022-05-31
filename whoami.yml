@@ -55,7 +55,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`whoami.dockr.life`)
+    - match: Host(`whoami.rfed.io`)
       kind: Rule
       services:
         - name: whoami

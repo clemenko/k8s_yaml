@@ -1057,7 +1057,7 @@ metadata:
   namespace: monitoring
 spec:
   rules:
-    - host: grafana.dockr.life
+    - host: grafana.rfed.io
       http:
         paths:
         - path: /
@@ -1074,7 +1074,7 @@ metadata:
   namespace: monitoring
 spec:
   rules:
-    - host: prom.dockr.life
+    - host: prom.rfed.io
       http:
         paths:
         - path: /
@@ -1092,7 +1092,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`grafana.dockr.life`)
+    - match: Host(`grafana.rfed.io`)
       kind: Rule
       services:
         - name: grafana
@@ -1107,7 +1107,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`prom.dockr.life`)
+    - match: Host(`prom.rfed.io`)
       kind: Rule
       services:
         - name: prometheus-svc
