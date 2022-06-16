@@ -1710,8 +1710,8 @@ spec:
           containerPort: 80
         - name: tcp
           containerPort: 443
-#        - name: admin
-#          containerPort: 8080
+        - name: admin
+          containerPort: 8080
         securityContext:
           allowPrivilegeEscalation: true
           capabilities:
