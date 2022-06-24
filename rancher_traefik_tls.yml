@@ -14,5 +14,6 @@ spec:
           port: 80
   tls:
     secretName: tls-rancher-ingress
-    domains:
-    - main: rancher.rfed.io
+#    certResolver: rancher
+#    domains:
+#    - main: rancher.rfed.io

@@ -2,9 +2,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: minio
-  "annotations": {
-    "owner" : "minio team"
-  }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -26,7 +23,7 @@ spec:
       containers:
       - name: minio
         image: minio/minio
-        command: ["sh", "-c", "mkdir -p /storage/backupbucket && exec /usr/bin/minio server /storage"]
+        command: ["/bin/sh", "-ce", "/usr/bin/docker-entrypoint.sh minio server /data --address :9000 --console-address :9001"]
         env:
         - name: MINIO_ACCESS_KEY
           value: minioadmin
@@ -36,10 +33,11 @@ spec:
         - containerPort: 9000
         volumeMounts:
         - name: minio-volume
-          mountPath: "/storage"
+          mountPath: "/data"
       volumes:
       - name: minio-volume
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: minio
 ---
 apiVersion: v1
 kind: Service
@@ -55,3 +53,48 @@ spec:
       protocol: TCP
   sessionAffinity: ClientIP
   type: NodePort
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-console
+  namespace: minio
+spec:
+  selector:
+    app: minio
+  ports:
+    - port: 9001
+      targetPort: 9001
+      protocol: TCP
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio
+  namespace: minio
+stringData:
+  CRYPTO_KEY_VALUE: "sEFA/gCHH68nVKits2EthgpctAYvDUR7mQA23CFd4gLeENP2Qb9o3A=="
+  CRYPTO_KEY_PROVIDER: "secret"
+
+---
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: minio
+  namespace: minio
+  labels:
+    app: minio
+spec:
+  storageClassName: "longhorn-crypto-per-volume"
+  accessModes: 
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 250Mi
+---
