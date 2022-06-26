@@ -11,5 +11,5 @@ spec:
     - match: Host(`traefik.rfed.io`)
       kind: Rule
       services:
-        - name: traefik
-          port: 8080
+        - kind: TraefikService
+          name: api@internal

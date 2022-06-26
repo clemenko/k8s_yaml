@@ -1696,7 +1696,7 @@ spec:
           image: traefik
           args:
             - --api.insecure
-#            - --accesslog
+#           - --accesslog
             - --global.checknewversion
             - --entrypoints.web.Address=:80
             - --entryPoints.web.forwardedHeaders.insecure

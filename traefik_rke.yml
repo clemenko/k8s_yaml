@@ -1695,6 +1695,7 @@ spec:
         imagePullPolicy: IfNotPresent
         args:
         - --api.insecure
+        - --accesslog
         - --entrypoints.web.Address=:80
         - --entryPoints.web.forwardedHeaders.insecure
         - --entrypoints.tcp.Address=:443
