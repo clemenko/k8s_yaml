@@ -91,7 +91,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`code.rfed.io`)
+    - match: Host(`code.rfed.run`)
       kind: Rule
       services:
         - name: code-server
