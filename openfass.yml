@@ -1,0 +1,1683 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  labels:
+    app: openfaas
+    component: alertmanager-config
+  name: alertmanager-config
+  namespace: "openfaas"
+data:
+  alertmanager.yml: |
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 5s
+      group_interval: 10s
+      repeat_interval: 30s
+      receiver: scale-up
+      routes:
+      - match:
+          service: gateway
+          receiver: scale-up
+          severity: major
+    inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'cluster', 'service']
+    receivers:
+    - name: 'scale-up'
+      webhook_configs:
+        - url: http://gateway.openfaas:8080/system/alert
+          send_resolved: true
+          http_config:
+            basic_auth:
+              username: admin
+              password_file: /var/secrets/basic-auth-password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openfaas
+    component: alertmanager
+  name: alertmanager
+  namespace: "openfaas"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+      annotations:
+        sidecar.istio.io/inject: "true"
+        checksum/alertmanager-config: "d11068803eeb977273e116dc044c25fb39b03295446b1251b7f1fbc26104ed04"
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.18.0
+        imagePullPolicy: Always
+        command:
+          - "alertmanager"
+          - "--config.file=/alertmanager.yml"
+          - "--storage.path=/alertmanager"
+          - "--cluster.listen-address="
+        livenessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9093
+          timeoutSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9093
+          timeoutSeconds: 30
+        ports:
+        - containerPort: 9093
+          protocol: TCP
+        resources:
+            limits:
+              memory: 50Mi
+            requests:
+              memory: 25Mi
+        volumeMounts:
+        - mountPath: /alertmanager.yml
+          name: alertmanager-config
+          subPath: alertmanager.yml
+        - name: auth
+          readOnly: true
+          mountPath: "/var/secrets"
+      volumes:
+        - name: alertmanager-config
+          configMap:
+            name: alertmanager-config
+            items:
+              - key: alertmanager.yml
+                path: alertmanager.yml
+                mode: 0644
+        - name: auth
+          secret:
+            secretName: basic-auth
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openfaas
+    component: alertmanager
+  name: alertmanager
+  namespace: "openfaas"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9093
+      protocol: TCP
+  selector:
+    app: alertmanager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openfaas
+    component: basic-auth-plugin
+  name: basic-auth-plugin
+  namespace: "openfaas"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: basic-auth-plugin
+  template:
+    metadata:
+      annotations:
+        prometheus.io.scrape: "false"
+      labels:
+        app: basic-auth-plugin
+    spec:
+      volumes:
+      - name: auth
+        secret:
+          secretName: basic-auth
+      containers:
+      - name:  basic-auth-plugin
+        resources:
+            requests:
+              cpu: 20m
+              memory: 50Mi
+        image: openfaas/basic-auth-plugin:0.18.18
+        imagePullPolicy: Always
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsUser: 10001
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          timeoutSeconds: 5
+        env:
+        - name: secret_mount_path
+          value: "/var/secrets"
+        - name: basic_auth
+          value: "true"
+        volumeMounts:
+        - name: auth
+          readOnly: true
+          mountPath: "/var/secrets"
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openfaas
+    component: basic-auth-plugin
+  name: basic-auth-plugin
+  namespace: "openfaas"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: basic-auth-plugin
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: openfaas
+    component: faas-controller
+  name: openfaas-controller
+  namespace: "openfaas"
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  labels:
+    app: openfaas
+    component: faas-controller
+  name: openfaas-controller
+  namespace: "openfaas-fn"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
+  - apiGroups:
+      - extensions
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/log
+      - namespaces
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  labels:
+    app: openfaas
+    component: faas-controller
+  name: openfaas-profiles
+  namespace: "openfaas"
+rules:
+  - apiGroups:
+      - "openfaas.com"
+    resources:
+      - "profiles"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  labels:
+    app: openfaas
+    component: faas-controller
+  name: openfaas-controller
+  namespace: "openfaas-fn"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openfaas-controller
+subjects:
+  - kind: ServiceAccount
+    name: openfaas-controller
+    namespace: "openfaas"
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  labels:
+    app: openfaas
+    component: faas-controller
+  name: openfaas-profiles
+  namespace: "openfaas"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openfaas-profiles
+subjects:
+  - kind: ServiceAccount
+    name: openfaas-controller
+    namespace: "openfaas"
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: profiles.openfaas.com
+spec:
+  group: openfaas.com
+  names:
+    kind: Profile
+    listKind: ProfileList
+    plural: profiles
+    singular: profile
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: Profile and ProfileSpec are used to customise the Pod template
+        for functions
+      type: object
+      required:
+      - spec
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: 'ProfileSpec is an openfaas api extensions that can be predefined
+            and applied to functions by annotating them with `com.openfaas/profile:
+            name1,name2`'
+          type: object
+          properties:
+            affinity:
+              description: "If specified, the pod's scheduling constraints \n copied
+                to the Pod Affinity, this will replace any existing value or previously
+                applied Profile. We use a replacement strategy because it is not clear
+                that merging affinities will actually produce a meaning Affinity definition,
+                it would likely result in an impossible to satisfy constraint"
+              type: object
+              properties:
+                nodeAffinity:
+                  description: Describes node affinity scheduling rules for the pod.
+                  type: object
+                  properties:
+                    preferredDuringSchedulingIgnoredDuringExecution:
+                      description: The scheduler will prefer to schedule pods to nodes
+                        that satisfy the affinity expressions specified by this field,
+                        but it may choose a node that violates one or more of the
+                        expressions. The node that is most preferred is the one with
+                        the greatest sum of weights, i.e. for each node that meets
+                        all of the scheduling requirements (resource request, requiredDuringScheduling
+                        affinity expressions, etc.), compute a sum by iterating through
+                        the elements of this field and adding "weight" to the sum
+                        if the node matches the corresponding matchExpressions; the
+                        node(s) with the highest sum are the most preferred.
+                      type: array
+                      items:
+                        description: An empty preferred scheduling term matches all
+                          objects with implicit weight 0 (i.e. it's a no-op). A null
+                          preferred scheduling term matches no objects (i.e. is also
+                          a no-op).
+                        type: object
+                        required:
+                        - preference
+                        - weight
+                        properties:
+                          preference:
+                            description: A node selector term, associated with the
+                              corresponding weight.
+                            type: object
+                            properties:
+                              matchExpressions:
+                                description: A list of node selector requirements
+                                  by node's labels.
+                                type: array
+                                items:
+                                  description: A node selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  type: object
+                                  required:
+                                  - key
+                                  - operator
+                                  properties:
+                                    key:
+                                      description: The label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: Represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists, DoesNotExist. Gt, and Lt.
+                                      type: string
+                                    values:
+                                      description: An array of string values. If the
+                                        operator is In or NotIn, the values array
+                                        must be non-empty. If the operator is Exists
+                                        or DoesNotExist, the values array must be
+                                        empty. If the operator is Gt or Lt, the values
+                                        array must have a single element, which will
+                                        be interpreted as an integer. This array is
+                                        replaced during a strategic merge patch.
+                                      type: array
+                                      items:
+                                        type: string
+                              matchFields:
+                                description: A list of node selector requirements
+                                  by node's fields.
+                                type: array
+                                items:
+                                  description: A node selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  type: object
+                                  required:
+                                  - key
+                                  - operator
+                                  properties:
+                                    key:
+                                      description: The label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: Represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists, DoesNotExist. Gt, and Lt.
+                                      type: string
+                                    values:
+                                      description: An array of string values. If the
+                                        operator is In or NotIn, the values array
+                                        must be non-empty. If the operator is Exists
+                                        or DoesNotExist, the values array must be
+                                        empty. If the operator is Gt or Lt, the values
+                                        array must have a single element, which will
+                                        be interpreted as an integer. This array is
+                                        replaced during a strategic merge patch.
+                                      type: array
+                                      items:
+                                        type: string
+                          weight:
+                            description: Weight associated with matching the corresponding
+                              nodeSelectorTerm, in the range 1-100.
+                            type: integer
+                            format: int32
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      description: If the affinity requirements specified by this
+                        field are not met at scheduling time, the pod will not be
+                        scheduled onto the node. If the affinity requirements specified
+                        by this field cease to be met at some point during pod execution
+                        (e.g. due to an update), the system may or may not try to
+                        eventually evict the pod from its node.
+                      type: object
+                      required:
+                      - nodeSelectorTerms
+                      properties:
+                        nodeSelectorTerms:
+                          description: Required. A list of node selector terms. The
+                            terms are ORed.
+                          type: array
+                          items:
+                            description: A null or empty node selector term matches
+                              no objects. The requirements of them are ANDed. The
+                              TopologySelectorTerm type implements a subset of the
+                              NodeSelectorTerm.
+                            type: object
+                            properties:
+                              matchExpressions:
+                                description: A list of node selector requirements
+                                  by node's labels.
+                                type: array
+                                items:
+                                  description: A node selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  type: object
+                                  required:
+                                  - key
+                                  - operator
+                                  properties:
+                                    key:
+                                      description: The label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: Represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists, DoesNotExist. Gt, and Lt.
+                                      type: string
+                                    values:
+                                      description: An array of string values. If the
+                                        operator is In or NotIn, the values array
+                                        must be non-empty. If the operator is Exists
+                                        or DoesNotExist, the values array must be
+                                        empty. If the operator is Gt or Lt, the values
+                                        array must have a single element, which will
+                                        be interpreted as an integer. This array is
+                                        replaced during a strategic merge patch.
+                                      type: array
+                                      items:
+                                        type: string
+                              matchFields:
+                                description: A list of node selector requirements
+                                  by node's fields.
+                                type: array
+                                items:
+                                  description: A node selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  type: object
+                                  required:
+                                  - key
+                                  - operator
+                                  properties:
+                                    key:
+                                      description: The label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: Represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists, DoesNotExist. Gt, and Lt.
+                                      type: string
+                                    values:
+                                      description: An array of string values. If the
+                                        operator is In or NotIn, the values array
+                                        must be non-empty. If the operator is Exists
+                                        or DoesNotExist, the values array must be
+                                        empty. If the operator is Gt or Lt, the values
+                                        array must have a single element, which will
+                                        be interpreted as an integer. This array is
+                                        replaced during a strategic merge patch.
+                                      type: array
+                                      items:
+                                        type: string
+                podAffinity:
+                  description: Describes pod affinity scheduling rules (e.g. co-locate
+                    this pod in the same node, zone, etc. as some other pod(s)).
+                  type: object
+                  properties:
+                    preferredDuringSchedulingIgnoredDuringExecution:
+                      description: The scheduler will prefer to schedule pods to nodes
+                        that satisfy the affinity expressions specified by this field,
+                        but it may choose a node that violates one or more of the
+                        expressions. The node that is most preferred is the one with
+                        the greatest sum of weights, i.e. for each node that meets
+                        all of the scheduling requirements (resource request, requiredDuringScheduling
+                        affinity expressions, etc.), compute a sum by iterating through
+                        the elements of this field and adding "weight" to the sum
+                        if the node has pods which matches the corresponding podAffinityTerm;
+                        the node(s) with the highest sum are the most preferred.
+                      type: array
+                      items:
+                        description: The weights of all of the matched WeightedPodAffinityTerm
+                          fields are added per-node to find the most preferred node(s)
+                        type: object
+                        required:
+                        - podAffinityTerm
+                        - weight
+                        properties:
+                          podAffinityTerm:
+                            description: Required. A pod affinity term, associated
+                              with the corresponding weight.
+                            type: object
+                            required:
+                            - topologyKey
+                            properties:
+                              labelSelector:
+                                description: A label query over a set of resources,
+                                  in this case pods.
+                                type: object
+                                properties:
+                                  matchExpressions:
+                                    description: matchExpressions is a list of label
+                                      selector requirements. The requirements are
+                                      ANDed.
+                                    type: array
+                                    items:
+                                      description: A label selector requirement is
+                                        a selector that contains values, a key, and
+                                        an operator that relates the key and values.
+                                      type: object
+                                      required:
+                                      - key
+                                      - operator
+                                      properties:
+                                        key:
+                                          description: key is the label key that the
+                                            selector applies to.
+                                          type: string
+                                        operator:
+                                          description: operator represents a key's
+                                            relationship to a set of values. Valid
+                                            operators are In, NotIn, Exists and DoesNotExist.
+                                          type: string
+                                        values:
+                                          description: values is an array of string
+                                            values. If the operator is In or NotIn,
+                                            the values array must be non-empty. If
+                                            the operator is Exists or DoesNotExist,
+                                            the values array must be empty. This array
+                                            is replaced during a strategic merge patch.
+                                          type: array
+                                          items:
+                                            type: string
+                                  matchLabels:
+                                    description: matchLabels is a map of {key,value}
+                                      pairs. A single {key,value} in the matchLabels
+                                      map is equivalent to an element of matchExpressions,
+                                      whose key field is "key", the operator is "In",
+                                      and the values array contains only "value".
+                                      The requirements are ANDed.
+                                    type: object
+                                    additionalProperties:
+                                      type: string
+                              namespaces:
+                                description: namespaces specifies which namespaces
+                                  the labelSelector applies to (matches against);
+                                  null or empty list means "this pod's namespace"
+                                type: array
+                                items:
+                                  type: string
+                              topologyKey:
+                                description: This pod should be co-located (affinity)
+                                  or not co-located (anti-affinity) with the pods
+                                  matching the labelSelector in the specified namespaces,
+                                  where co-located is defined as running on a node
+                                  whose value of the label with key topologyKey matches
+                                  that of any node on which any of the selected pods
+                                  is running. Empty topologyKey is not allowed.
+                                type: string
+                          weight:
+                            description: weight associated with matching the corresponding
+                              podAffinityTerm, in the range 1-100.
+                            type: integer
+                            format: int32
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      description: If the affinity requirements specified by this
+                        field are not met at scheduling time, the pod will not be
+                        scheduled onto the node. If the affinity requirements specified
+                        by this field cease to be met at some point during pod execution
+                        (e.g. due to a pod label update), the system may or may not
+                        try to eventually evict the pod from its node. When there
+                        are multiple elements, the lists of nodes corresponding to
+                        each podAffinityTerm are intersected, i.e. all terms must
+                        be satisfied.
+                      type: array
+                      items:
+                        description: Defines a set of pods (namely those matching
+                          the labelSelector relative to the given namespace(s)) that
+                          this pod should be co-located (affinity) or not co-located
+                          (anti-affinity) with, where co-located is defined as running
+                          on a node whose value of the label with key <topologyKey>
+                          matches that of any node on which a pod of the set of pods
+                          is running
+                        type: object
+                        required:
+                        - topologyKey
+                        properties:
+                          labelSelector:
+                            description: A label query over a set of resources, in
+                              this case pods.
+                            type: object
+                            properties:
+                              matchExpressions:
+                                description: matchExpressions is a list of label selector
+                                  requirements. The requirements are ANDed.
+                                type: array
+                                items:
+                                  description: A label selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  type: object
+                                  required:
+                                  - key
+                                  - operator
+                                  properties:
+                                    key:
+                                      description: key is the label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: operator represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists and DoesNotExist.
+                                      type: string
+                                    values:
+                                      description: values is an array of string values.
+                                        If the operator is In or NotIn, the values
+                                        array must be non-empty. If the operator is
+                                        Exists or DoesNotExist, the values array must
+                                        be empty. This array is replaced during a
+                                        strategic merge patch.
+                                      type: array
+                                      items:
+                                        type: string
+                              matchLabels:
+                                description: matchLabels is a map of {key,value} pairs.
+                                  A single {key,value} in the matchLabels map is equivalent
+                                  to an element of matchExpressions, whose key field
+                                  is "key", the operator is "In", and the values array
+                                  contains only "value". The requirements are ANDed.
+                                type: object
+                                additionalProperties:
+                                  type: string
+                          namespaces:
+                            description: namespaces specifies which namespaces the
+                              labelSelector applies to (matches against); null or
+                              empty list means "this pod's namespace"
+                            type: array
+                            items:
+                              type: string
+                          topologyKey:
+                            description: This pod should be co-located (affinity)
+                              or not co-located (anti-affinity) with the pods matching
+                              the labelSelector in the specified namespaces, where
+                              co-located is defined as running on a node whose value
+                              of the label with key topologyKey matches that of any
+                              node on which any of the selected pods is running. Empty
+                              topologyKey is not allowed.
+                            type: string
+                podAntiAffinity:
+                  description: Describes pod anti-affinity scheduling rules (e.g.
+                    avoid putting this pod in the same node, zone, etc. as some other
+                    pod(s)).
+                  type: object
+                  properties:
+                    preferredDuringSchedulingIgnoredDuringExecution:
+                      description: The scheduler will prefer to schedule pods to nodes
+                        that satisfy the anti-affinity expressions specified by this
+                        field, but it may choose a node that violates one or more
+                        of the expressions. The node that is most preferred is the
+                        one with the greatest sum of weights, i.e. for each node that
+                        meets all of the scheduling requirements (resource request,
+                        requiredDuringScheduling anti-affinity expressions, etc.),
+                        compute a sum by iterating through the elements of this field
+                        and adding "weight" to the sum if the node has pods which
+                        matches the corresponding podAffinityTerm; the node(s) with
+                        the highest sum are the most preferred.
+                      type: array
+                      items:
+                        description: The weights of all of the matched WeightedPodAffinityTerm
+                          fields are added per-node to find the most preferred node(s)
+                        type: object
+                        required:
+                        - podAffinityTerm
+                        - weight
+                        properties:
+                          podAffinityTerm:
+                            description: Required. A pod affinity term, associated
+                              with the corresponding weight.
+                            type: object
+                            required:
+                            - topologyKey
+                            properties:
+                              labelSelector:
+                                description: A label query over a set of resources,
+                                  in this case pods.
+                                type: object
+                                properties:
+                                  matchExpressions:
+                                    description: matchExpressions is a list of label
+                                      selector requirements. The requirements are
+                                      ANDed.
+                                    type: array
+                                    items:
+                                      description: A label selector requirement is
+                                        a selector that contains values, a key, and
+                                        an operator that relates the key and values.
+                                      type: object
+                                      required:
+                                      - key
+                                      - operator
+                                      properties:
+                                        key:
+                                          description: key is the label key that the
+                                            selector applies to.
+                                          type: string
+                                        operator:
+                                          description: operator represents a key's
+                                            relationship to a set of values. Valid
+                                            operators are In, NotIn, Exists and DoesNotExist.
+                                          type: string
+                                        values:
+                                          description: values is an array of string
+                                            values. If the operator is In or NotIn,
+                                            the values array must be non-empty. If
+                                            the operator is Exists or DoesNotExist,
+                                            the values array must be empty. This array
+                                            is replaced during a strategic merge patch.
+                                          type: array
+                                          items:
+                                            type: string
+                                  matchLabels:
+                                    description: matchLabels is a map of {key,value}
+                                      pairs. A single {key,value} in the matchLabels
+                                      map is equivalent to an element of matchExpressions,
+                                      whose key field is "key", the operator is "In",
+                                      and the values array contains only "value".
+                                      The requirements are ANDed.
+                                    type: object
+                                    additionalProperties:
+                                      type: string
+                              namespaces:
+                                description: namespaces specifies which namespaces
+                                  the labelSelector applies to (matches against);
+                                  null or empty list means "this pod's namespace"
+                                type: array
+                                items:
+                                  type: string
+                              topologyKey:
+                                description: This pod should be co-located (affinity)
+                                  or not co-located (anti-affinity) with the pods
+                                  matching the labelSelector in the specified namespaces,
+                                  where co-located is defined as running on a node
+                                  whose value of the label with key topologyKey matches
+                                  that of any node on which any of the selected pods
+                                  is running. Empty topologyKey is not allowed.
+                                type: string
+                          weight:
+                            description: weight associated with matching the corresponding
+                              podAffinityTerm, in the range 1-100.
+                            type: integer
+                            format: int32
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      description: If the anti-affinity requirements specified by
+                        this field are not met at scheduling time, the pod will not
+                        be scheduled onto the node. If the anti-affinity requirements
+                        specified by this field cease to be met at some point during
+                        pod execution (e.g. due to a pod label update), the system
+                        may or may not try to eventually evict the pod from its node.
+                        When there are multiple elements, the lists of nodes corresponding
+                        to each podAffinityTerm are intersected, i.e. all terms must
+                        be satisfied.
+                      type: array
+                      items:
+                        description: Defines a set of pods (namely those matching
+                          the labelSelector relative to the given namespace(s)) that
+                          this pod should be co-located (affinity) or not co-located
+                          (anti-affinity) with, where co-located is defined as running
+                          on a node whose value of the label with key <topologyKey>
+                          matches that of any node on which a pod of the set of pods
+                          is running
+                        type: object
+                        required:
+                        - topologyKey
+                        properties:
+                          labelSelector:
+                            description: A label query over a set of resources, in
+                              this case pods.
+                            type: object
+                            properties:
+                              matchExpressions:
+                                description: matchExpressions is a list of label selector
+                                  requirements. The requirements are ANDed.
+                                type: array
+                                items:
+                                  description: A label selector requirement is a selector
+                                    that contains values, a key, and an operator that
+                                    relates the key and values.
+                                  type: object
+                                  required:
+                                  - key
+                                  - operator
+                                  properties:
+                                    key:
+                                      description: key is the label key that the selector
+                                        applies to.
+                                      type: string
+                                    operator:
+                                      description: operator represents a key's relationship
+                                        to a set of values. Valid operators are In,
+                                        NotIn, Exists and DoesNotExist.
+                                      type: string
+                                    values:
+                                      description: values is an array of string values.
+                                        If the operator is In or NotIn, the values
+                                        array must be non-empty. If the operator is
+                                        Exists or DoesNotExist, the values array must
+                                        be empty. This array is replaced during a
+                                        strategic merge patch.
+                                      type: array
+                                      items:
+                                        type: string
+                              matchLabels:
+                                description: matchLabels is a map of {key,value} pairs.
+                                  A single {key,value} in the matchLabels map is equivalent
+                                  to an element of matchExpressions, whose key field
+                                  is "key", the operator is "In", and the values array
+                                  contains only "value". The requirements are ANDed.
+                                type: object
+                                additionalProperties:
+                                  type: string
+                          namespaces:
+                            description: namespaces specifies which namespaces the
+                              labelSelector applies to (matches against); null or
+                              empty list means "this pod's namespace"
+                            type: array
+                            items:
+                              type: string
+                          topologyKey:
+                            description: This pod should be co-located (affinity)
+                              or not co-located (anti-affinity) with the pods matching
+                              the labelSelector in the specified namespaces, where
+                              co-located is defined as running on a node whose value
+                              of the label with key topologyKey matches that of any
+                              node on which any of the selected pods is running. Empty
+                              topologyKey is not allowed.
+                            type: string
+            podSecurityContext:
+              description: "SecurityContext holds pod-level security attributes and
+                common container settings. Optional: Defaults to empty.  See type
+                description for default values of each field. \n each non-nil value
+                will be merged into the function's PodSecurityContext, the value will
+                replace any existing value or previously applied Profile"
+              type: object
+              properties:
+                fsGroup:
+                  description: "A special supplemental group that applies to all containers
+                    in a pod. Some volume types allow the Kubelet to change the ownership
+                    of that volume to be owned by the pod: \n 1. The owning GID will
+                    be the FSGroup 2. The setgid bit is set (new files created in
+                    the volume will be owned by FSGroup) 3. The permission bits are
+                    OR'd with rw-rw---- \n If unset, the Kubelet will not modify the
+                    ownership and permissions of any volume."
+                  type: integer
+                  format: int64
+                fsGroupChangePolicy:
+                  description: 'fsGroupChangePolicy defines behavior of changing ownership
+                    and permission of the volume before being exposed inside Pod.
+                    This field will only apply to volume types which support fsGroup
+                    based ownership(and permissions). It will have no effect on ephemeral
+                    volume types such as: secret, configmaps and emptydir. Valid values
+                    are "OnRootMismatch" and "Always". If not specified defaults to
+                    "Always".'
+                  type: string
+                runAsGroup:
+                  description: The GID to run the entrypoint of the container process.
+                    Uses runtime default if unset. May also be set in SecurityContext.  If
+                    set in both SecurityContext and PodSecurityContext, the value
+                    specified in SecurityContext takes precedence for that container.
+                  type: integer
+                  format: int64
+                runAsNonRoot:
+                  description: Indicates that the container must run as a non-root
+                    user. If true, the Kubelet will validate the image at runtime
+                    to ensure that it does not run as UID 0 (root) and fail to start
+                    the container if it does. If unset or false, no such validation
+                    will be performed. May also be set in SecurityContext.  If set
+                    in both SecurityContext and PodSecurityContext, the value specified
+                    in SecurityContext takes precedence.
+                  type: boolean
+                runAsUser:
+                  description: The UID to run the entrypoint of the container process.
+                    Defaults to user specified in image metadata if unspecified. May
+                    also be set in SecurityContext.  If set in both SecurityContext
+                    and PodSecurityContext, the value specified in SecurityContext
+                    takes precedence for that container.
+                  type: integer
+                  format: int64
+                seLinuxOptions:
+                  description: The SELinux context to be applied to all containers.
+                    If unspecified, the container runtime will allocate a random SELinux
+                    context for each container.  May also be set in SecurityContext.  If
+                    set in both SecurityContext and PodSecurityContext, the value
+                    specified in SecurityContext takes precedence for that container.
+                  type: object
+                  properties:
+                    level:
+                      description: Level is SELinux level label that applies to the
+                        container.
+                      type: string
+                    role:
+                      description: Role is a SELinux role label that applies to the
+                        container.
+                      type: string
+                    type:
+                      description: Type is a SELinux type label that applies to the
+                        container.
+                      type: string
+                    user:
+                      description: User is a SELinux user label that applies to the
+                        container.
+                      type: string
+                supplementalGroups:
+                  description: A list of groups applied to the first process run in
+                    each container, in addition to the container's primary GID.  If
+                    unspecified, no groups will be added to any container.
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                sysctls:
+                  description: Sysctls hold a list of namespaced sysctls used for
+                    the pod. Pods with unsupported sysctls (by the container runtime)
+                    might fail to launch.
+                  type: array
+                  items:
+                    description: Sysctl defines a kernel parameter to be set
+                    type: object
+                    required:
+                    - name
+                    - value
+                    properties:
+                      name:
+                        description: Name of a property to set
+                        type: string
+                      value:
+                        description: Value of a property to set
+                        type: string
+                windowsOptions:
+                  description: The Windows specific settings applied to all containers.
+                    If unspecified, the options within a container's SecurityContext
+                    will be used. If set in both SecurityContext and PodSecurityContext,
+                    the value specified in SecurityContext takes precedence.
+                  type: object
+                  properties:
+                    gmsaCredentialSpec:
+                      description: GMSACredentialSpec is where the GMSA admission
+                        webhook (https://github.com/kubernetes-sigs/windows-gmsa)
+                        inlines the contents of the GMSA credential spec named by
+                        the GMSACredentialSpecName field.
+                      type: string
+                    gmsaCredentialSpecName:
+                      description: GMSACredentialSpecName is the name of the GMSA
+                        credential spec to use.
+                      type: string
+                    runAsUserName:
+                      description: The UserName in Windows to run the entrypoint of
+                        the container process. Defaults to the user specified in image
+                        metadata if unspecified. May also be set in PodSecurityContext.
+                        If set in both SecurityContext and PodSecurityContext, the
+                        value specified in SecurityContext takes precedence.
+                      type: string
+            runtimeClassName:
+              description: "RuntimeClassName refers to a RuntimeClass object in the
+                node.k8s.io group, which should be used to run this pod.  If no RuntimeClass
+                resource matches the named class, the pod will not be run. If unset
+                or empty, the \"legacy\" RuntimeClass will be used, which is an implicit
+                class with an empty definition that uses the default runtime handler.
+                More info: https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md
+                This is a beta feature as of Kubernetes v1.14. \n copied to the Pod
+                RunTimeClass, this will replace any existing value or previously applied
+                Profile."
+              type: string
+            tolerations:
+              description: "If specified, the function's pod tolerations. \n merged
+                into the Pod Tolerations"
+              type: array
+              items:
+                description: The pod this Toleration is attached to tolerates any
+                  taint that matches the triple <key,value,effect> using the matching
+                  operator <operator>.
+                type: object
+                properties:
+                  effect:
+                    description: Effect indicates the taint effect to match. Empty
+                      means match all taint effects. When specified, allowed values
+                      are NoSchedule, PreferNoSchedule and NoExecute.
+                    type: string
+                  key:
+                    description: Key is the taint key that the toleration applies
+                      to. Empty means match all taint keys. If the key is empty, operator
+                      must be Exists; this combination means to match all values and
+                      all keys.
+                    type: string
+                  operator:
+                    description: Operator represents a key's relationship to the value.
+                      Valid operators are Exists and Equal. Defaults to Equal. Exists
+                      is equivalent to wildcard for value, so that a pod can tolerate
+                      all taints of a particular category.
+                    type: string
+                  tolerationSeconds:
+                    description: TolerationSeconds represents the period of time the
+                      toleration (which must be of effect NoExecute, otherwise this
+                      field is ignored) tolerates the taint. By default, it is not
+                      set, which means tolerate the taint forever (do not evict).
+                      Zero and negative values will be treated as 0 (evict immediately)
+                      by the system.
+                    type: integer
+                    format: int64
+                  value:
+                    description: Value is the taint value the toleration matches to.
+                      If the operator is Exists, the value should be empty, otherwise
+                      just a regular string.
+                    type: string
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: faas-idler
+  namespace: "openfaas"
+  labels:
+    app: openfaas
+    component: faas-idler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: faas-idler
+  template:
+    metadata:
+      annotations:
+        prometheus.io.scrape: "false"
+      labels:
+        app: faas-idler
+    spec:
+      containers:
+        - name: faas-idler
+          resources:
+            requests:
+              memory: 64Mi
+          image: openfaas/faas-idler:0.3.0
+          imagePullPolicy: Always
+          env:
+            - name: gateway_url
+              value: "http://gateway.openfaas:8080/"
+            - name: prometheus_host
+              value: "prometheus.openfaas"
+            - name: prometheus_port
+              value: "9090"
+            - name: inactivity_duration
+              value: 30m
+            - name: reconcile_interval
+              value: 2m
+          command:
+            - /home/app/faas-idler
+            - -dry-run=true
+          volumeMounts:
+            - name: auth
+              readOnly: true
+              mountPath: "/var/secrets/"
+      volumes:
+        - name: auth
+          secret:
+            secretName: basic-auth
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openfaas
+    component: gateway
+  name: gateway
+  namespace: "openfaas"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      annotations:
+        prometheus.io.scrape: "true"
+        prometheus.io.port: "8082"
+      labels:
+        app: gateway
+    spec:
+      serviceAccountName: openfaas-controller
+      volumes:
+      - name: faas-netes-temp-volume
+        emptyDir: {}
+      - name: auth
+        secret:
+          secretName: basic-auth
+      containers:
+      - name: gateway
+        resources:
+            requests:
+              cpu: 50m
+              memory: 120Mi
+        image: openfaas/gateway:0.18.18
+        imagePullPolicy: Always
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsUser: 10001
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          timeoutSeconds: 5
+        env:
+        - name: read_timeout
+          value: "65s"
+        - name: write_timeout
+          value: "65s"
+        - name: upstream_timeout
+          value: "60s"
+        - name: functions_provider_url
+          value: "http://127.0.0.1:8081/"
+        - name: direct_functions
+          value: "true"
+        - name: direct_functions_suffix
+          value: "openfaas-fn.svc.cluster.local"
+        - name: function_namespace
+          value: "openfaas-fn"
+        - name: faas_nats_address
+          value: "nats.openfaas.svc.cluster.local"
+        - name: faas_nats_port
+          value: "4222"
+        - name: faas_nats_channel
+          value: "faas-request"
+        - name: basic_auth
+          value: "true"
+        - name: secret_mount_path
+          value: "/var/secrets"
+        - name: auth_proxy_url
+          value: "http://basic-auth-plugin.openfaas:8080/validate"
+        - name: auth_pass_body
+          value: "false"
+        - name: scale_from_zero
+          value: "true"
+        - name: max_idle_conns
+          value: "1024"
+        - name: max_idle_conns_per_host
+          value: "1024"
+        volumeMounts:
+        - name: auth
+          readOnly: true
+          mountPath: "/var/secrets"
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+      - name: faas-netes
+        resources:
+            requests:
+              cpu: 50m
+              memory: 120Mi
+        image: openfaas/faas-netes:0.12.3
+        imagePullPolicy: Always
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsUser: 10001
+        env:
+        - name: port
+          value: "8081"
+        - name: function_namespace
+          value: "openfaas-fn"
+        - name: read_timeout
+          value: "60s"
+        - name: profiles_namespace
+          value: "openfaas"
+        - name: write_timeout
+          value: "60s"
+        - name: image_pull_policy
+          value: "Always"
+        - name: http_probe
+          value: "true"
+        - name: set_nonroot_user
+          value: "false"
+        - name: readiness_probe_initial_delay_seconds
+          value: "2"
+        - name: readiness_probe_timeout_seconds
+          value: "1"
+        - name: readiness_probe_period_seconds
+          value: "2"
+        - name: liveness_probe_initial_delay_seconds
+          value: "2"
+        - name: liveness_probe_timeout_seconds
+          value: "1"
+        - name: liveness_probe_period_seconds
+          value: "2"
+        volumeMounts:
+        - mountPath: /tmp
+          name: faas-netes-temp-volume
+        ports:
+        - containerPort: 8081
+          protocol: TCP
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openfaas
+    component: gateway
+  name: gateway-external
+  namespace: "openfaas"
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+      nodePort: 31112
+  selector:
+    app: gateway
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openfaas
+    component: gateway
+  name: gateway
+  namespace: "openfaas"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: gateway
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openfaas
+    component: nats
+  name: nats
+  namespace: "openfaas"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+        prometheus.io.scrape: "false" 
+      labels:
+        app: nats
+    spec:
+      containers:
+      - name:  nats
+        resources:
+            requests:
+              memory: 120Mi
+        image: nats-streaming:0.17.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 4222
+          protocol: TCP
+        command: ["/nats-streaming-server"]
+        args:
+          - --store
+          - memory
+          - --cluster_id
+          - faas-cluster
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openfaas
+    component: nats
+  name: nats
+  namespace: "openfaas"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 4222
+      protocol: TCP
+      name: clients
+  selector:
+    app: nats
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  labels:
+    app: openfaas
+    component: prometheus-config
+  name: prometheus-config
+  namespace: "openfaas"
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval:     15s
+      evaluation_interval: 15s
+      external_labels:
+          monitor: 'faas-monitor'
+    rule_files:
+        - 'alert.rules.yml'
+    scrape_configs:
+      - job_name: 'prometheus'
+        scrape_interval: 5s
+        static_configs:
+          - targets: ['localhost:9090']
+      - job_name: 'kubernetes-pods'
+        scrape_interval: 5s
+        honor_labels: false
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - openfaas
+                - openfaas-fn
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
+  alert.rules.yml: |
+    groups:
+      - name: openfaas
+        rules:
+        - alert: service_down
+          expr: up == 0
+        - alert: APIHighInvocationRate
+          expr: sum(rate(gateway_function_invocation_total{code="200"}[10s])) BY (function_name) > 5
+          for: 5s
+          labels:
+            service: gateway
+            severity: major
+          annotations:
+            description: High invocation total on "{{$labels.function_name}}"
+            summary: High invocation total on "{{$labels.function_name}}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openfaas
+    component: prometheus
+  name: prometheus
+  namespace: "openfaas"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+      annotations:
+        sidecar.istio.io/inject: "true"
+        checksum/prometheus-config: "833784fe79824d5a9adfaf93561abc4dabbf746669235c5ac020e85a9a563510"
+    spec:
+      serviceAccountName: openfaas-prometheus
+      containers:
+      - name: prometheus
+        resources:
+            requests:
+              memory: 512Mi
+        image: prom/prometheus:v2.11.0
+        command:
+          - "prometheus"
+          - "--config.file=/etc/prometheus/prometheus.yml"
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          timeoutSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          timeoutSeconds: 30
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /etc/prometheus/prometheus.yml
+          name: prometheus-config
+          subPath: prometheus.yml
+        - mountPath: /etc/prometheus/alert.rules.yml
+          name: prometheus-config
+          subPath: alert.rules.yml
+        - mountPath: /prometheus/data
+          name: prom-data
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+            items:
+              - key: prometheus.yml
+                path: prometheus.yml
+                mode: 0644
+              - key: alert.rules.yml
+                path: alert.rules.yml
+                mode: 0644
+        - name: prom-data
+          emptyDir: {}
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openfaas-prometheus
+  namespace: "openfaas"
+  labels:
+    app: openfaas
+    component: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openfaas-prometheus
+  labels:
+    app: openfaas
+    component: prometheus
+rules:
+- apiGroups: [""]
+  resources:
+    - services
+    - endpoints
+    - pods
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openfaas-prometheus
+  namespace: "openfaas"
+  labels:
+    app: openfaas
+    component: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openfaas-prometheus
+subjects:
+- kind: ServiceAccount
+  name: openfaas-prometheus
+  namespace: "openfaas"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openfaas-prometheus
+  namespace: "openfaas-fn"
+  labels:
+    app: openfaas
+    component: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openfaas-prometheus
+subjects:
+- kind: ServiceAccount
+  name: openfaas-prometheus
+  namespace: "openfaas"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: openfaas
+    component: prometheus
+  name: prometheus
+  namespace: "openfaas"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9090
+      protocol: TCP
+  selector:
+    app: prometheus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openfaas
+    component: queue-worker
+  name: queue-worker
+  namespace: "openfaas"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: queue-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io.scrape: "false"
+      labels:
+        app: queue-worker
+    spec:
+      volumes:
+      - name: auth
+        secret:
+          secretName: basic-auth
+      containers:
+      - name:  queue-worker
+        resources:
+            requests:
+              cpu: 50m
+              memory: 120Mi
+        image: openfaas/queue-worker:0.11.2
+        imagePullPolicy: Always
+        env:
+        - name: faas_nats_address
+          value: "nats.openfaas.svc.cluster.local"
+        - name: faas_nats_channel
+          value: "faas-request"
+        - name: faas_nats_queue_group
+          value: "faas"
+        - name: faas_gateway_address
+          value: "gateway.openfaas.svc.cluster.local"
+        - name: "gateway_invoke"
+          value: "true"
+        - name: faas_function_suffix
+          value: ".openfaas-fn.svc.cluster.local"
+        - name: max_inflight
+          value: "1"
+        - name: ack_wait    # Max duration of any async task / request
+          value: 60s
+        - name: secret_mount_path
+          value: "/var/secrets"
+        - name: basic_auth
+          value: "true"
+        volumeMounts:
+        - name: auth
+          readOnly: true
+          mountPath: "/var/secrets"
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64

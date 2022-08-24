@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ghost
+  labels:
+    app: ghost
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ghost
+  template:
+    metadata:
+      labels:
+        app: ghost
+    spec:
+      containers:
+      - name: ghost
+        image: ghost
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2368
+        env:
+        - name: url
+          value: http://ghost.rfed.io
+        volumeMounts:
+        - mountPath: /var/lib/ghost/content
+          name: ghost
+      volumes:
+      - name: ghost
+        persistentVolumeClaim:
+          claimName: ghost
+          
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: ghost
+  name: ghost
+spec:
+  selector:
+    app: ghost
+  ports:
+  - name: ghost
+    protocol: TCP
+    port: 2368
+    targetPort: 2368
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ghost
+  labels:
+    app: ghost
+spec:
+  accessModes: 
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ghost-ingressroute
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`ghost.rfed.io`)
+      kind: Rule
+      services:
+        - name: ghost
+          port: 2368

@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apache-php
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: apache-php
+  labels:
+    run: apache-php
+  name: apache-php-svc
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    run: apache-php
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: apache-php
+  labels:
+    run: apache-php
+  name: apache-php-dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: apache-php
+  template:
+    metadata:
+      labels:
+        run: apache-php
+    spec:
+      containers:
+      - image: ehazlett/docker-demo
+      # - image: dtr.docker.ee/engineering/apache-php:latest
+        name: apache-php
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+          requests:
+            cpu: 50m
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1beta1
+metadata:
+  namespace: apache-php
+  name: apache-php-ing
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: "apache.kube.docker.ee" # layer7 ingress host
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: apache-php-svc
+          servicePort: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: apache-php-hpa
+  namespace: apache-php
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: apache-php-dep
+  minReplicas: 1
+  maxReplicas: 10
+  #targetCPUUtilizationPercentage: 50
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 50
+

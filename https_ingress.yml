@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+ name: <<The name of your ingress record>>
+ annotations:
+   ingress.kubernetes.io/ssl-passthrough: “true”
+   nginx.ingress.kubernetes.io/secure-backends: “true”
+spec:
+ tls:
+   - hosts:
+     - <<yourservice.url.com>>
+ rules:
+ - host: <<yourservice.url.com>>
+   http:
+     paths:
+     - path:
+       backend:
+         serviceName: proxy
+         servicePort: 443

@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: code-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+ name: code-server
+ namespace: code-server
+spec:
+  ports:
+  - port: 8443
+    targetPort: 8443
+  type: NodePort
+  selector:
+    app: code-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: code-server
+  name: code-server
+  namespace: code-server
+spec:
+  selector:
+    matchLabels:
+      app: code-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: code-server
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+#      initContainers:
+#      - name: setup
+#        image: alpine
+#        command: ["/bin/sh","-c"]
+#        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#L https://andyc.info/rox/roxctl_Linux_3.0.58.0 -o /opt/bin/roxctl && cp /config/workspace/kube_config /opt/kube_config && chmod 755 /opt/bin/kubectl /opt/bin/roxctl /opt/kube_config"]
+#        volumeMounts:
+#        - name: workdir
+#          mountPath: "/opt/"
+#        - name: kubeconfig
+#          mountPath: /config/workspace/kube_config
+      containers:
+      - image: ghcr.io/linuxserver/code-server #codercom/code-server:latest
+        imagePullPolicy: Always
+        name: code-server
+        env:
+        - name: PASSWORD
+          value: "Pa22word"
+        - name: SUDO_PASSWORD
+          value: "Pa22word"
+        - name: KUBECONFIG
+          value: /opt/kube_config
+        - name: SHELL
+          value: "/bin/bash"
+        - name: PATH
+          value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bin"
+        volumeMounts:
+          - name: workdir
+            mountPath: /opt/
+          - name: ssh
+            mountPath: /root/
+          - name: bin
+            mountPath: /opt/bin/
+          - name: kubeconfig
+            mountPath: /root/.kube/config
+      volumes:
+      - name: workdir
+        emptyDir: {}
+      - name: kubeconfig
+        hostPath:
+          path: /etc/rancher/k3s/k3s.yaml
+      - name: ssh
+        hostPath:
+          path: /root/
+      - name: bin
+        hostPath:
+          path: /usr/local/bin
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: code-server
+  namespace: code-server
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`code.rfed.run`)
+      kind: Rule
+      services:
+        - name: code-server
+          port: 8443

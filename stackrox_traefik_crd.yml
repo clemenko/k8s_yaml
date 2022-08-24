@@ -1,0 +1,16 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: stackrox-ingresstcp
+  namespace: stackrox
+spec:
+  entryPoints:
+    - tcp
+  routes:
+    - match: HostSNI(`stackrox.rfed.io`)
+      services:
+        - name: central
+          port: 443
+  tls:
+    passthrough: true
