@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gitea
+  namespace: git
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`git.rfed.me`)
+      kind: Rule
+      services:
+        - name: gitea-http
+          port: 3000
