@@ -1,6 +1,6 @@
 ---
 apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
+kind: IngressRouteTCP
 metadata:
   name: rancher
   namespace: cattle-system
@@ -8,8 +8,7 @@ spec:
   entryPoints:
     - tcp
   routes:
-    - match: Host(`rancher.rfed.io`)
-      kind: Rule
+    - match: HostSNI(`rancher.rfed.io`)
       services:
         - name: rancher
           port: 80
