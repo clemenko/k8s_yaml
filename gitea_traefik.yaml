@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`git.rfed.me`)
+    - match: Host(`git.rfed.io`)
       kind: Rule
       services:
         - name: gitea-http
