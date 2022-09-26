@@ -1663,7 +1663,7 @@ spec:
       targetPort: admin
   selector:
     app: traefik
-  type: LoadBalancer
+  type: ClusterIP
 
 ---
 apiVersion: v1
@@ -1703,6 +1703,7 @@ spec:
         - --metrics.prometheus.addEntryPointsLabels=true
         - --metrics.prometheus.addServicesLabels=true
         - --providers.kubernetescrd
+        - --providers.kubernetesingress
         - --global.sendAnonymousUsage=false
         - --log.level=DEBUG
         - --pilot.dashboard=false
