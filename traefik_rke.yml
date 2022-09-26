@@ -1657,14 +1657,9 @@ spec:
       port: 443
       protocol: TCP
       targetPort: 443
-    - name: admin
-      port: 8080
-      protocol: TCP
-      targetPort: admin
   selector:
     app: traefik
   type: ClusterIP
-
 ---
 apiVersion: v1
 kind: ServiceAccount
