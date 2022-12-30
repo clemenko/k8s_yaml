@@ -1,0 +1,15 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: neuvector-ingresstcp
+  namespace: neuvector
+spec:
+  entryPoints:
+    - tcp
+  routes:
+    - match: HostSNI(`neuvector.rfed.io`)
+      services:
+        - name: neuvector-service-webui
+          port: 8443
+  tls:
+    passthrough: true
