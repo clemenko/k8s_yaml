@@ -1,0 +1,38 @@
+
+
+
+
+
+
+# Navlinks
+
+apiVersion: ui.cattle.io/v1
+kind: NavLink
+metadata:
+  name: traefik
+spec:
+  target: _blank
+  description: Cloud Native Ingress Traefik
+  label: Traefik
+  sideLabel: external
+  toURL: http://traefik.rfed.site
+---
+apiVersion: ui.cattle.io/v1
+kind: NavLink
+metadata:
+  name: longhorn
+spec:
+  label: Longhorn
+  description: Cloud-native block storage
+  sideLabel: external
+  toURL: http://longhorn.rfed.site
+---
+apiVersion: ui.cattle.io/v1
+kind: NavLink
+metadata:
+  name: neuvector
+spec:
+  label: Neuvector
+  description: Cloud-native block security
+  sideLabel: external
+  toURL: http://neuvector.rfed.site
