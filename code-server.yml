@@ -39,7 +39,7 @@ spec:
       - name: setup
         image: alpine
         command: ["/bin/sh","-c"]
-        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && curl -#L https://mirror.openshift.com/pub/rhacs/assets/latest/bin/Linux/roxctl -o /opt/bin/roxctl && chmod 755 /opt/bin/kubectl /opt/bin/roxctl"]
+        args: ["sleep 5; mkdir /opt/bin/ && apk -U add curl && curl -#L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /opt/bin/kubectl && chmod 755 /opt/bin/kubectl"]
         volumeMounts:
         - name: workdir
           mountPath: "/opt/"
@@ -70,17 +70,20 @@ spec:
         hostPath:
           path: /opt/kube/
 ---
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: code-server
   namespace: code-server
 spec:
-  entryPoints:
-    - web
-  routes:
-    - match: Host(`code.rfed.io`)
-      kind: Rule
-      services:
-        - name: code-server
-          port: 8443
+  rules:
+  - host: code.rfed.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: code-server
+            port:
+              number: 8443
