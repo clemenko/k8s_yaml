@@ -1,0 +1,24 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  entryPoints:
+    - tcp
+  routes:
+  - match: Host(`harbor.rfed.me`)
+    kind: Rule
+    services:
+    - name: harbor-portal
+      namespace: harbor
+      port: 80
+  - match: Host(`harbor.rfed.me`) && PathPrefix(`/api/`, `/service/`, `/v2/`, `/chartrepo/`, `/c/`)
+    kind: Rule
+    services:
+    - name: harbor-core
+      namespace: harbor
+      port: 80
+  tls:
+    domains:
+    - main: 'harbor.rfed.me'
