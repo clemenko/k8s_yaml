@@ -1,0 +1,15 @@
+iapiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  entryPoints:
+    - tcp
+  routes:
+    - match: HostSNI(`keycloak.rfed.io`)
+      services:
+        - name: keycloak
+          port: 443
+  tls:
+    passthrough: true
