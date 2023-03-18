@@ -8,7 +8,7 @@ spec:
   entryPoints:
     - tcp
   routes:
-    - match: HostSNI(`stackrox.rfed.io`)
+    - match: HostSNI(`stackrox.rfed.xx`)
       services:
         - name: central
           port: 443

@@ -8,7 +8,7 @@ spec:
   entryPoints:
     - tcp
   routes:
-    - match: HostSNI(`rancher.rfed.io`)
+    - match: HostSNI(`rancher.rfed.xx`)
       services:
         - name: rancher
           port: 443

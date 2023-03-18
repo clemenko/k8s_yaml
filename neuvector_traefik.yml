@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - tcp
   routes:
-    - match: HostSNI(`neuvector.rfed.io`)
+    - match: HostSNI(`neuvector.rfed.xx`)
       services:
         - name: neuvector-service-webui
           port: 8443
