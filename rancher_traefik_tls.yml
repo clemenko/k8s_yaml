@@ -8,11 +8,11 @@ spec:
   entryPoints:
     - tcp
   routes:
-    - match: HostSNI(`rancher.rfed.io`)
+    - match: HostSNI(`rancher.rfed.XX`)
       services:
         - name: rancher
           port: 80
   tls:
     secretName: tls-rancher-ingress
     domains: 
-    - main: rancher.rfed.io
+    - main: rancher.rfed.XX
