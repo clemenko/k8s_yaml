@@ -1686,7 +1686,7 @@ spec:
       serviceAccountName: traefik-ingress-controller
       containers:
       - name: traefik
-        image: traefik:v2.9
+        image: traefik:v2.9.10
         imagePullPolicy: IfNotPresent
         args:
         - --api.insecure
