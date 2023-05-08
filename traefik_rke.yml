@@ -4712,6 +4712,7 @@ spec:
         - --providers.kubernetescrd
         - --providers.kubernetesingress
         - --global.sendAnonymousUsage=false
+        - --serverstransport.insecureskipverify
         - --log.level=DEBUG
         - --pilot.dashboard=false
         ports:

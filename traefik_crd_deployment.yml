@@ -1707,6 +1707,7 @@ spec:
             - --global.sendAnonymousUsage=false
             - --log.level=INFO
             - --pilot.dashboard=false
+            - --serverstransport.insecureskipverify
             - --providers.kubernetescrd
             - --providers.kubernetesingress
             - --providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik
