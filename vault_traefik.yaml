@@ -1,0 +1,20 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vault
+  namespace: vault
+spec:
+  entryPoints:
+    - web
+    - tcp
+  routes:
+    - match: Host(`vault.rfed.xx`)
+      kind: Rule
+      services:
+        - name: vault
+          port: 8200
+  tls:
+    secretName: tls-vault
+    domains: 
+    - main: rancher.rfed.xx
+
