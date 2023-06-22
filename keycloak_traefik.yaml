@@ -5,9 +5,11 @@ metadata:
   namespace: keycloak
 spec:
   entryPoints:
+    - web
     - tcp
   routes:
-    - match: HostSNI(`keycloak.rfed.xx`)
+    - match: Host(`keycloak.rfed.xx`)
+      kind: Rule
       services:
         - name: keycloak
           port: 80
