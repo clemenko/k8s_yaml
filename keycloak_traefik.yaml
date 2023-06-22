@@ -10,6 +10,8 @@ spec:
     - match: HostSNI(`keycloak.rfed.xx`)
       services:
         - name: keycloak
-          port: 443
+          port: 80
   tls:
-    passthrough: true
+    secretName: tls-ingress
+    domains: 
+    - main: keycloak.rfed.xx
