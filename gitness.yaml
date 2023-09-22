@@ -1,0 +1,104 @@
+# gitness
+
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitness
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitness
+  namespace: gitness
+  labels:
+    app: gitness
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitness
+  template:
+    metadata:
+      labels:
+        app: gitness
+    spec:
+      containers:
+      - name: gitness
+        image: harness/gitness
+        env:
+        - name: GITNESS_METRIC_ENABLED
+          value: "false"
+        ports:
+        - containerPort: 3000
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: gitness-data
+          mountPath: /data
+          subPath:
+#        - name: docker-sock
+#          mountPath: /var/run/docker.sock
+#          subPath:
+      volumes:
+      - name: gitness-data
+        persistentVolumeClaim:
+          claimName: gitness
+#      - name: docker-sock
+#        hostPath:
+#          path: /var/run/k3s/containerd/containerd.sock
+
+# yum install docker -y; systemctl start podman
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: gitness
+  name: gitness
+  namespace: gitness
+spec:
+  selector:
+    app: gitness
+  ports:
+  - name: gitness
+    protocol: TCP
+    port: 3000
+    targetPort: 3000
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: gitness
+  namespace: gitness
+  labels:
+    app: gitness
+spec:
+  accessModes: 
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1G
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitness
+  namespace: gitness
+spec:
+  rules:
+  - host: gitness.rfed.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitness
+            port:
+              number: 3000
