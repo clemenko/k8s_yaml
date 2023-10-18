@@ -68,24 +68,3 @@ spec:
   resources:
     requests:
       storage: 1Gi
-
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: unifi
-  namespace: unifi
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-spec:
-  rules:
-  - host: unifi.rfed.me
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: unifi
-            port:
-              number: 8080
