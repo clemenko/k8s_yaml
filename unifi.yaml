@@ -1,0 +1,131 @@
+#unifi
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unifi
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unifi
+  namespace: unifi
+  labels:
+    app: unifi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unifi
+  template:
+    metadata:
+      labels:
+        app: unifi
+    spec:
+      hostNetwork: true
+      containers:
+        - env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+          image: linuxserver/unifi-controller
+          name: unifi
+          ports:
+            - containerPort: 3478
+              protocol: UDP
+            - containerPort: 10001
+              protocol: UDP
+            - containerPort: 8080
+            - containerPort: 8081
+            - containerPort: 8443
+            - containerPort: 8843
+            - containerPort: 8880
+            - containerPort: 6789
+          volumeMounts:
+          - name: unifi
+            mountPath: /config
+      restartPolicy: Always
+      volumes:
+      - name: unifi
+        persistentVolumeClaim:
+          claimName: unifi
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: unifi
+  name: unifi
+  namespace: unifi
+spec:
+  type: NodePort
+  ports:
+    - name: "3478"
+      port: 3478
+      protocol: UDP
+      targetPort: 3478
+    - name: "10001"
+      port: 10001
+      protocol: UDP
+      targetPort: 10001
+    - name: "8080"
+      port: 8080
+      targetPort: 8080
+    - name: "8081"
+      port: 8081
+      targetPort: 8081
+    - name: "8443"
+      port: 8443
+      targetPort: 8443
+    - name: "8843"
+      port: 8843
+      targetPort: 8843
+    - name: "8880"
+      port: 8880
+      targetPort: 8880
+    - name: "6789"
+      port: 6789
+      targetPort: 6789
+  selector:
+    app: unifi
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: unifi
+  name: unifi
+  namespace: unifi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: unifi
+  namespace: unifi
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: unifi.rfed.me
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: unifi
+            port:
+              number: 8080
