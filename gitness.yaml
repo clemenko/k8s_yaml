@@ -33,25 +33,29 @@ spec:
         env:
         - name: GITNESS_METRIC_ENABLED
           value: "false"
+        - name: GITNESS_PRINCIPAL_ADMIN_PASSWORD
+          value: Pa22word
+        - name: GITNESS_USER_SIGNUP_ENABLED
+          value: "false"
         ports:
         - containerPort: 3000
-        imagePullPolicy: Always
+        securityContext:
+          privileged: true
         volumeMounts:
         - name: gitness-data
           mountPath: /data
           subPath:
-#        - name: docker-sock
-#          mountPath: /var/run/docker.sock
-#          subPath:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+          subPath:
       volumes:
       - name: gitness-data
         persistentVolumeClaim:
           claimName: gitness
-#      - name: docker-sock
-#        hostPath:
-#          path: /var/run/k3s/containerd/containerd.sock
+      - name: docker-sock
+        hostPath:
+          path: /var/run/k3s/containerd/containerd.sock
 
-# yum install docker -y; systemctl start podman
 ---
 
 apiVersion: v1
@@ -93,7 +97,7 @@ metadata:
   namespace: gitness
 spec:
   rules:
-  - host: gitness.rfed.io
+  - host: gitness.rfed.xx
     http:
       paths:
       - path: /
