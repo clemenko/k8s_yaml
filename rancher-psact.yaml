@@ -63,4 +63,5 @@ plugins:
                      minio,
                      whoami,
                      harbor,
-                     gitea]
+                     gitea,
+                     tailscale]
