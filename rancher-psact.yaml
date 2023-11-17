@@ -56,4 +56,11 @@ plugins:
                      rancher-alerting-drivers,
                      security-scan,
                      tigera-operator,
-                     neuvector]
+                     neuvector,
+                     flask,
+                     ghost,
+                     kubecon,
+                     minio,
+                     whoami,
+                     harbor,
+                     gitea]
