@@ -64,4 +64,5 @@ plugins:
                      whoami,
                      harbor,
                      gitea,
-                     tailscale]
+                     tailscale,
+                     stackrox]
