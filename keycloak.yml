@@ -110,7 +110,6 @@ apiVersion: ui.cattle.io/v1
 kind: NavLink
 metadata:
   name: keycloak
-  namespace: keycloak
 spec:
   target: _blank
   description: Keycloak
