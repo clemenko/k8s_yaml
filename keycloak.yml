@@ -61,7 +61,7 @@ spec:
         volumeMounts:
         - name: keycloak-data
           mountPath: /opt/data # not used
-          subPath: 
+          subPath:
       volumes:
       - name: keycloak-data
         persistentVolumeClaim:
@@ -104,3 +104,15 @@ spec:
   - hosts:
     - keycloak.rfed.xx
     secretName: tls-ingress
+---
+# Navlinks
+apiVersion: ui.cattle.io/v1
+kind: NavLink
+metadata:
+  name: deploy
+spec:
+  target: _blank
+  description: Keycloak
+  label: deploy
+  sideLabel: external
+  toURL: https://keycloak.rfed.io/admin/master/console/
