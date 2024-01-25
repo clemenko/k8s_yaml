@@ -109,10 +109,11 @@ spec:
 apiVersion: ui.cattle.io/v1
 kind: NavLink
 metadata:
-  name: deploy
+  name: keycloak
+  namespace: keycloak
 spec:
   target: _blank
   description: Keycloak
-  label: deploy
+  label: Keycloak
   sideLabel: external
   toURL: https://keycloak.rfed.io/admin/master/console/
