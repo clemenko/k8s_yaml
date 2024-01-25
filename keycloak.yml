@@ -115,4 +115,4 @@ spec:
   description: Keycloak
   label: Keycloak
   sideLabel: external
-  toURL: https://keycloak.rfed.io/admin/master/console/
+  toURL: https://keycloak.rfed.io/admin/master/console/#/rancher
