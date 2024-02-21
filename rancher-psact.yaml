@@ -68,8 +68,5 @@ plugins:
                      stackrox,
                      keycloak]
 
-
 # PSA notes
-# kubectl label ns spark pod-security.kubernetes.io/audit=privileged
-# kubectl label ns spark pod-security.kubernetes.io/enforce=privileged
-# kubectl label ns spark pod-security.kubernetes.io/warn=privileged
+# kubectl label ns spark pod-security.kubernetes.io/audit=privileged pod-security.kubernetes.io/enforce=privileged pod-security.kubernetes.io/warn=privileged
