@@ -35,6 +35,8 @@ spec:
           value: "false"
         - name: GITNESS_PRINCIPAL_ADMIN_PASSWORD
           value: Pa22word
+        - name: GITNESS_PRINCIPAL_ADMIN_EMAIL
+          value: clemenko@gmail.com
         - name: GITNESS_USER_SIGNUP_ENABLED
           value: "false"
         ports:
