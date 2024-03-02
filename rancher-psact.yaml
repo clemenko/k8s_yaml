@@ -65,6 +65,7 @@ plugins:
                      harbor,
                      gitea,
                      tailscale,
+                     gitness,
                      stackrox,
                      keycloak]
 
