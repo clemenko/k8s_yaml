@@ -39,6 +39,8 @@ spec:
           value: clemenko@gmail.com
         - name: GITNESS_USER_SIGNUP_ENABLED
           value: "false"
+        - name: GITNESS_URL_GITNESS_URL_BASE
+          value: "http://gitness.rfed.io/"
         ports:
         - containerPort: 3000
         securityContext:
