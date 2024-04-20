@@ -137,8 +137,6 @@ kind: Ingress
 metadata:
   name: flask
   namespace: flask
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
   - host: flask.rfed.io
