@@ -1,0 +1,79 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kasm
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kasm
+  namespace: kasm
+  labels:
+    app: kasm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kasm
+  template:
+    metadata:
+      labels:
+        app: kasm
+    spec:
+      containers:
+      - name: kasm
+        image: kasmweb/alpine-319-desktop:1.15.0
+        env:
+        - name: VNC_PW
+          value: "Pa22word"
+        ports:
+        - containerPort: 6901
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: kasm
+    kubernetes.io/name: "kasm"
+  name: kasm
+  namespace: kasm
+spec:
+  selector:
+    app: kasm
+  type: ClusterIP
+  ports:
+  - name: kasm
+    protocol: TCP
+    port: 6901
+    targetPort: 6901
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kasm
+  namespace: kasm
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+spec:
+  tls:
+    - hosts:
+      - kasm.198.211.101.84.nip.io
+  rules:
+  - host: kasm.198.211.101.84.nip.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kasm
+            port:
+              number: 6901
