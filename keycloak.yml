@@ -46,9 +46,9 @@ spec:
           value: "keycloak.rfed.xx"        
         - name: KEYCLOAK_HOST
           value: "keycloak.rfed.xx"
-        - name: KEYCLOAK_ADMIN
+        - name: KC_BOOTSTRAP_ADMIN_USERNAME
           value: "admin"
-        - name: KEYCLOAK_ADMIN_PASSWORD
+        - name: KC_BOOTSTRAP_ADMIN_PASSWORD
           value: "Pa22word"
         - name: PROXY_ADDRESS_FORWARDING
           value: "true"
