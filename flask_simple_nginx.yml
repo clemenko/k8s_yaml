@@ -94,10 +94,10 @@ metadata:
 spec:
  # storageClassName: "longhorn-crypto-per-volume"
   accessModes: 
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 250Mi
+      storage: 500Mi
 ---
 apiVersion: v1
 kind: Service
