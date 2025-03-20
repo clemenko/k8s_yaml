@@ -93,9 +93,9 @@ metadata:
     app: redis
 spec:
  # storageClassName: "longhorn-crypto-per-volume"
-#  volumeMode: Block
+  volumeMode: Block
   accessModes: 
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 500Mi
